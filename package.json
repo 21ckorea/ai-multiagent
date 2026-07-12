@@ -1,0 +1,26 @@
+{
+  "name": "ai-multiagent",
+  "version": "1.0.0",
+  "description": "멀티 AI Agent 오케스트레이터 — Gemini Playwright 자동화",
+  "main": "src/api/server.js",
+  "scripts": {
+    "start": "node src/api/server.js",
+    "dev": "node --watch src/api/server.js",
+    "restart": "lsof -ti:3000 | xargs kill -9 2>/dev/null; sleep 1 && node src/api/server.js",
+    "kill-port": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
+    "session:export": "node src/agent/session_cli.js --export",
+    "session:verify": "node src/agent/session_cli.js --verify"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "googleapis": "^173.0.0",
+    "minimist": "^1.2.8",
+    "multer": "^2.2.0",
+    "playwright": "^1.44.0",
+    "selenium-webdriver": "^4.46.0",
+    "uuid": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

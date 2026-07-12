@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Multiagent — 멀티 AI 에이전트 오케스트레이터</title>
+  <meta name="description" content="Gemini 기반 다단계 프롬프트 파이프라인 자동화 시스템" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ─── 사이드바 ─────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🤖</span>
+      <span class="logo-text">AI Multiagent</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-tab="session" id="nav-session">
+        <span class="nav-icon">🔌</span>
+        <span class="nav-label">Gemini 연결</span>
+        <span class="nav-badge" id="session-badge"></span>
+      </button>
+      <button class="nav-item" data-tab="prompts" id="nav-prompts">
+        <span class="nav-icon">📝</span>
+        <span class="nav-label">프롬프트 관리</span>
+      </button>
+      <button class="nav-item" data-tab="workflow" id="nav-workflow">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">워크플로우</span>
+      </button>
+      <button class="nav-item" data-tab="runner" id="nav-runner">
+        <span class="nav-icon">▶️</span>
+        <span class="nav-label">실행 & 모니터링</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="server-status" id="server-status">
+        <span class="status-dot connected"></span>
+        <span class="status-text">서버 연결됨</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── 메인 컨텐츠 ─────────────────────────────────────── -->
+  <main class="main-content">
+    <div class="content-header">
+      <div class="header-left">
+        <h1 class="page-title" id="page-title">Gemini 연결</h1>
+        <p class="page-desc" id="page-desc">Google 계정 연결 및 세션 관리</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         탭 1: Gemini 세션 연결
+    ══════════════════════════════════════════════════ -->
+    <section class="tab-content active" id="tab-session">
+      <div class="cards-grid single">
+
+        <!-- Gemini 연결 카드 -->
+        <div class="card gemini-connect-card" id="gemini-connect-card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <span class="card-icon">🔌</span>
+              <h2 class="card-title">Gemini 연결</h2>
+            </div>
+            <div class="session-status-badge" id="session-status-badge">
+              <span class="badge-dot"></span>
+              <span class="badge-text" id="badge-text">연결 안됨</span>
+            </div>
+          </div>
+
+          <p class="card-desc">
+            발행할 글을 Gemini가 작성하려면 Google 계정 연결이 필요해요.
+            한 번만 설정해 두면, 다음부터는 로그인 없이 바로 이어 갈 수 있습니다.
+          </p>
+
+          <!-- 연결 방법 안내 -->
+          <div class="info-box" id="connect-guide">
+            <div class="info-box-title">연결 방법</div>
+            <ol class="guide-list">
+              <li>
+                <span class="guide-num">1</span>
+                <span>아래 <strong>'Gemini 로그인 시작'</strong>으로 Chrome을 엽니다.</span>
+              </li>
+              <li>
+                <span class="guide-num">2</span>
+                <span>열린 Chrome에서 Google 로그인을 완료합니다.</span>
+              </li>
+              <li>
+                <span class="guide-num">3</span>
+                <span>이 화면으로 돌아와 <strong>'연결 확인'</strong>을 눌러 Chrome 프로필을 저장합니다.</span>
+              </li>
+            </ol>
+            <div class="guide-success" id="guide-success" style="display:none;">
+              <span class="guide-success-icon">✅</span>
+              <strong>Gemini 연결이 완료되었습니다.</strong>
+            </div>
+          </div>
+
+          <!-- 프로필 분리 안내 -->
+          <div class="info-box secondary" id="profile-info">
+            <div class="info-box-title">프로필 분리 안내</div>
+            <p class="info-box-desc">
+              Chrome 확장의 시크릿 창 대신, Playwright 전용 브라우저 프로필에서 Google 로그인을
+              진행합니다. 일반 Chrome과 쿠키·세션이 분리되어 안전하게 Gemini 연결만 관리할 수 있습니다.
+            </p>
+          </div>
+
+          <!-- 저장된 세션 정보 -->
+          <div class="session-info-box" id="session-info-box" style="display:none;">
+            <div class="info-box-title">저장된 세션 정보</div>
+            <div class="session-meta" id="session-meta"></div>
+          </div>
+
+          <!-- 버튼 영역 -->
+          <div class="card-actions">
+            <button class="btn btn-primary" id="btn-start-session" onclick="startSession()">
+              <span class="btn-icon">🚀</span>
+              Gemini 로그인 시작
+            </button>
+            <button class="btn btn-success" id="btn-verify-session" onclick="verifySession()" style="display:none;">
+              <span class="btn-icon">✔</span>
+              연결 확인
+            </button>
+            <button class="btn btn-danger-outline" id="btn-clear-session" onclick="clearSession()">
+              <span class="btn-icon">🗑</span>
+              캐시 삭제
+            </button>
+          </div>
+
+          <!-- 상태 메시지 -->
+          <div class="status-message" id="session-message"></div>
+        </div>
+
+        <!-- 연결 상태 상세 카드 -->
+        <div class="card status-detail-card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <span class="card-icon">📊</span>
+              <h2 class="card-title">연결 상태</h2>
+            </div>
+          </div>
+          <div class="status-grid" id="status-grid">
+            <div class="status-item">
+              <span class="status-label">브라우저</span>
+              <span class="status-value" id="status-browser">대기 중</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">로그인</span>
+              <span class="status-value" id="status-login">미확인</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">세션 저장</span>
+              <span class="status-value" id="status-saved">없음</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">프로필 경로</span>
+              <span class="status-value mono" id="status-profile">profiles/gemini-profile</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card-section-title">Gemini URL</div>
+          <div class="url-display">
+            <span class="url-text">https://gemini.google.com/app</span>
+            <a href="https://gemini.google.com/app" target="_blank" class="url-link">↗ 열기</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         탭 2: 프롬프트 관리
+    ══════════════════════════════════════════════════ -->
+    <section class="tab-content" id="tab-prompts">
+      <div class="prompts-layout">
+        <!-- 스텝 목록 패널 -->
+        <div class="steps-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">스텝 목록</h3>
+            <button class="btn btn-sm btn-primary" onclick="createStep()">+ 추가</button>
+          </div>
+          <div class="steps-list" id="steps-list">
+            <div class="empty-state">스텝이 없습니다.<br/>위 '+ 추가' 버튼으로 생성하세요.</div>
+          </div>
+        </div>
+
+        <!-- 스텝 편집 패널 -->
+        <div class="step-editor" id="step-editor">
+          <div class="editor-empty" id="editor-empty">
+            <span class="editor-empty-icon">📝</span>
+            <p>좌측에서 스텝을 선택하거나<br/>새 스텝을 추가하세요.</p>
+          </div>
+          <div class="editor-form" id="editor-form" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">스텝 이름</label>
+              <input type="text" class="form-input" id="step-name" placeholder="예: 키워드 분석" />
+              <div class="step-id-display" id="step-id-display"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">에이전트 타입 (액션)</label>
+              <select id="step-type" class="form-input">
+                <option value="gemini">Gemini 프롬프트 전송 (기본)</option>
+                <option value="plugin_google_sheet">구글 시트 연동 (읽기/쓰기)</option>
+                <option value="plugin_gemini_image">Gemini 이미지 생성</option>
+                <option value="plugin_naver_publish">네이버 블로그 자동 포스팅</option>
+              </select>
+            </div>
+
+            <!-- 구글 시트 연동 전용 파일 업로드 UI -->
+            <div class="form-group" id="credential-upload-group" style="display:none; background-color: var(--surface); padding: 10px; border-radius: 8px;">
+              <label class="form-label">🔐 구글 서비스 계정 자격 증명 (JSON) 업로드</label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="credential-file-input" accept=".json" class="form-input" style="flex:1;" />
+                <button type="button" class="btn btn-secondary" onclick="uploadCredentialFile()">업로드</button>
+              </div>
+              <div id="credential-upload-status" class="label-hint" style="margin-top: 5px;">* 다중 사용자 환경을 위해 각 스텝별로 키를 업로드할 수 있습니다.</div>
+            </div>
+
+            <!-- ── 변수 팔레트 ────────────────────────── -->
+            <div class="form-group">
+              <label class="form-label">사용 가능한 변수 <span class="label-hint">— 클릭하면 프롬프트에 삽입됩니다</span></label>
+              <div class="var-palette">
+                <!-- 기본 변수 -->
+                <div class="var-group">
+                  <div class="var-group-title">기본</div>
+                  <div class="var-chips" id="var-chips-basic">
+                    <button class="var-chip" onclick="insertVar('{{prev_output}}')" title="직전 스텝의 출력">
+                      <span class="var-chip-icon">⬆</span>
+                      <span>{{prev_output}}</span>
+                      <span class="var-chip-desc">직전 스텝 결과</span>
+                    </button>
+                    <button class="var-chip" onclick="insertVar('{{workflow_input}}')" title="워크플로우 최초 입력값">
+                      <span class="var-chip-icon">📥</span>
+                      <span>{{workflow_input}}</span>
+                      <span class="var-chip-desc">최초 입력값</span>
+                    </button>
+                    <button class="var-chip" onclick="insertVar('{{today}}')" title="오늘 날짜 YYYY-MM-DD">
+                      <span class="var-chip-icon">📅</span>
+                      <span>{{today}}</span>
+                      <span class="var-chip-desc">오늘 날짜</span>
+                    </button>
+                  </div>
+                </div>
+                <!-- 이전 스텝 참조 -->
+                <div class="var-group" id="var-group-steps" style="display:none;">
+                  <div class="var-group-title">이전 스텝 결과 참조</div>
+                  <div class="var-chips" id="var-chips-steps"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── 프롬프트 에디터 ────────────────────── -->
+            <div class="form-group">
+              <label class="form-label">프롬프트</label>
+              <textarea class="form-textarea" id="step-prompt" rows="10"
+                placeholder="Gemini에게 전달할 프롬프트를 입력하세요.
+
+예시 — 이전 단계 결과를 입력으로 받기:
+{{prev_output}} 결과를 바탕으로 코드를 작성해줘.
+
+예시 — 특정 스텝 참조:
+{{step_abc12345_output}} 내용을 요약해줘."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group half">
+                <label class="form-label">타임아웃 (초)</label>
+                <input type="number" class="form-input" id="step-timeout" value="120" min="30" max="600" />
+              </div>
+              <div class="form-group half">
+                <label class="form-label">새 채팅 시작</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="step-new-chat" checked />
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">활성화</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 루프 설정 -->
+            <div class="form-group">
+              <label class="form-label">
+                반복(루프) 설정
+                <label class="toggle-switch inline">
+                  <input type="checkbox" id="loop-enabled" onchange="toggleLoop(this)" />
+                  <span class="toggle-slider small"></span>
+                </label>
+              </label>
+              <div class="loop-settings" id="loop-settings" style="display:none;">
+                <div class="form-row">
+                  <div class="form-group third">
+                    <label class="form-label">조건 타입</label>
+                    <select class="form-select" id="loop-condition">
+                      <option value="none">없음</option>
+                      <option value="keyword">키워드 포함</option>
+                      <option value="minLength">최소 글자 수</option>
+                      <option value="regex">정규식 패턴</option>
+                      <option value="noError">에러 없음</option>
+                    </select>
+                  </div>
+                  <div class="form-group third">
+                    <label class="form-label">조건 값</label>
+                    <input type="text" class="form-input" id="loop-value" placeholder="예: 완료, 500, /패턴/" />
+                  </div>
+                  <div class="form-group third">
+                    <label class="form-label">최대 재시도 횟수</label>
+                    <input type="number" class="form-input" id="loop-retries" value="3" min="1" max="10" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group full" style="width: 100%;">
+                    <label class="form-label">조건 실패 시 되돌아갈 스텝 (선택)</label>
+                    <select class="form-select" id="loop-goto-step">
+                      <option value="">(없음) - 현재 스텝만 반복</option>
+                      <!-- 옵션들이 동적으로 렌더링됨 -->
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="editor-actions">
+              <button class="btn btn-primary" onclick="saveStep()">💾 저장</button>
+              <button class="btn btn-danger-outline" onclick="deleteCurrentStep()">🗑 삭제</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         탭 3: 워크플로우 관리
+    ══════════════════════════════════════════════════ -->
+    <section class="tab-content" id="tab-workflow">
+      <div class="workflow-layout">
+        <!-- 워크플로우 목록 -->
+        <div class="workflow-list-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">워크플로우 목록</h3>
+            <button class="btn btn-sm btn-primary" onclick="createWorkflow()">+ 새 워크플로우</button>
+          </div>
+          <div class="workflow-list" id="workflow-list">
+            <div class="empty-state">워크플로우가 없습니다.</div>
+          </div>
+        </div>
+
+        <!-- 워크플로우 편집기 -->
+        <div class="workflow-editor" id="workflow-editor">
+          <div class="editor-empty" id="wf-editor-empty">
+            <span class="editor-empty-icon">⚙️</span>
+            <p>좌측에서 워크플로우를 선택하거나<br/>새로 생성하세요.</p>
+          </div>
+          <div class="wf-editor-form" id="wf-editor-form" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">워크플로우 이름</label>
+              <input type="text" class="form-input" id="wf-name" placeholder="예: 블로그 초안 생성" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">설명</label>
+              <input type="text" class="form-input" id="wf-desc" placeholder="이 워크플로우가 하는 일을 설명하세요." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">초기 입력값 (선택)</label>
+              <input type="text" class="form-input" id="wf-input" placeholder="{{workflow_input}} 변수로 각 스텝에서 참조됩니다." />
+            </div>
+
+            <!-- 스텝 순서 -->
+            <div class="form-group">
+              <div class="steps-order-header">
+                <label class="form-label">스텝 순서</label>
+                <button class="btn btn-sm btn-outline" onclick="openStepSelector()">+ 스텝 추가</button>
+              </div>
+              <div class="steps-flow" id="steps-flow">
+                <div class="empty-state small">스텝을 추가하세요.</div>
+              </div>
+            </div>
+
+            <div class="editor-actions">
+              <button class="btn btn-primary" onclick="saveWorkflow()">💾 저장</button>
+              <button class="btn btn-success" onclick="runCurrentWorkflow()">▶ 실행</button>
+              <button class="btn btn-danger-outline" onclick="deleteCurrentWorkflow()">🗑 삭제</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         탭 4: 실행 & 모니터링
+    ══════════════════════════════════════════════════ -->
+    <section class="tab-content" id="tab-runner">
+      <div class="runner-layout">
+        <!-- 실행 제어 -->
+        <div class="runner-control card">
+          <div class="card-header">
+            <div class="card-title-row">
+              <span class="card-icon">🎮</span>
+              <h2 class="card-title">실행 제어</h2>
+            </div>
+            <div class="run-status-badge" id="run-status-badge">
+              <span class="badge-dot idle"></span>
+              <span>대기 중</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">워크플로우 선택</label>
+            <select class="form-select" id="run-workflow-select">
+              <option value="">-- 워크플로우를 선택하세요 --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">입력값 (선택)</label>
+            <input type="text" class="form-input" id="run-input" placeholder="초기 입력값 ({{workflow_input}})" />
+          </div>
+
+          <div class="runner-actions">
+            <button class="btn btn-success btn-lg" id="btn-run" onclick="runWorkflow()">
+              <span>▶</span> 실행 시작
+            </button>
+            <button class="btn btn-danger btn-lg" id="btn-abort" onclick="abortRun()" disabled>
+              <span>⏹</span> 중단
+            </button>
+          </div>
+
+          <!-- 단계별 진행 상태 -->
+          <div class="progress-section" id="progress-section" style="display:none;">
+            <div class="progress-title">단계별 진행 상태</div>
+            <div class="steps-progress" id="steps-progress"></div>
+          </div>
+        </div>
+
+        <!-- 로그 & 결과 -->
+        <div class="runner-output">
+          <div class="card log-card">
+            <div class="card-header">
+              <div class="card-title-row">
+                <span class="card-icon">📋</span>
+                <h2 class="card-title">실시간 로그</h2>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="clearLog()">지우기</button>
+            </div>
+            <div class="log-viewer" id="log-viewer">
+              <div class="log-empty">실행을 시작하면 로그가 여기에 표시됩니다.</div>
+            </div>
+          </div>
+
+          <div class="card result-card" id="result-card" style="display:none;">
+            <div class="card-header">
+              <div class="card-title-row">
+                <span class="card-icon">✨</span>
+                <h2 class="card-title">최종 결과</h2>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="copyResult()">📋 복사</button>
+            </div>
+            <div class="result-viewer" id="result-viewer"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ─── 스텝 선택 모달 ────────────────────────────────────── -->
+  <div class="modal-overlay" id="step-selector-modal" style="display:none;" onclick="closeStepSelector(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>스텝 추가</h3>
+        <button class="modal-close" onclick="closeStepSelector()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-steps-list" id="modal-steps-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
