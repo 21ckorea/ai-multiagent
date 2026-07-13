@@ -55,11 +55,13 @@ app.on('ready', async () => {
 
   // 2. Express 서버 백그라운드 실행
   const serverPath = path.join(__dirname, 'src/api/server.js');
+  const userDataDir = app.getPath('userData');
   serverProcess = fork(serverPath, [], {
     env: {
       ...process.env,
       PORT: String(PORT),
-      HEADLESS: 'false'
+      HEADLESS: 'false',
+      APP_DATA_DIR: userDataDir
     }
   });
 

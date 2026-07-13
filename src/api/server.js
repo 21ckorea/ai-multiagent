@@ -5,6 +5,16 @@
  * @description Express API 서버 — 워크플로우/세션/실행 REST API + SSE
  */
 
+// === ASAR 앱 배포 환경을 위한 CWD 패치 ===
+if (process.env.APP_DATA_DIR) {
+  try {
+    process.chdir(process.env.APP_DATA_DIR);
+    console.log('[Server] process.cwd() changed to:', process.cwd());
+  } catch (err) {
+    console.error('[Server] Failed to change directory to APP_DATA_DIR:', err);
+  }
+}
+
 const express        = require('express');
 const path           = require('path');
 const fs             = require('fs');
