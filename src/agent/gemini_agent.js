@@ -96,7 +96,8 @@ async function getOrCreateContext() {
   } catch { /* 실행 중인 프로세스가 없거나 실패 시 무시 */ }
 
   const context = await chromium.launchPersistentContext(DEFAULT_PROFILE_DIR, {
-    headless: false,
+    headless: process.env.HEADLESS === 'true',
+    channel: 'chrome',
     args: [
       '--no-first-run',
       '--no-default-browser-check',

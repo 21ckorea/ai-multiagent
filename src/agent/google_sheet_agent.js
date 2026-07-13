@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const googleSheetsHelper = require('../../references/google_sheets');
+const googleSheetsHelper = require('../lib/google_sheets');
 
 /**
  * Google Sheet Agent

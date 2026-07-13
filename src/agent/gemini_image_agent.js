@@ -1,6 +1,6 @@
 'use strict';
 
-const geminiImageHelper = require('../../references/gemini_image');
+const geminiImageHelper = require('../lib/gemini_image');
 const util = require('util');
 const execFile = util.promisify(require('child_process').execFile);
 const path = require('path');
@@ -63,9 +63,9 @@ async function execute(prompt, options) {
       prompts.push({ type: 'thumbnail', text: `주제: ${parsedObj.title}\n스타일: ${style}` });
     }
     if (parsedObj.blocks && Array.isArray(parsedObj.blocks)) {
-      const { buildNaverPastePayloadFromJson } = require('../../references/naver_common');
+      const { buildNaverPastePayloadFromJson } = require('../lib/naver_common');
       const payload = buildNaverPastePayloadFromJson(cleanText);
-      const { buildNaverImagePlaceholders } = require('../../references/naver_image');
+      const { buildNaverImagePlaceholders } = require('../lib/naver_image');
       const placeholders = buildNaverImagePlaceholders(payload.blocks);
       for (const ph of placeholders) {
         if (ph.promptInner) {

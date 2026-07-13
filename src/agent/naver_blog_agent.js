@@ -1,7 +1,7 @@
 'use strict';
 
-const naverEditorHelper = require('../../references/naver_editor');
-const naverPublishHelper = require('../../references/playwright_naver_publish');
+const naverEditorHelper = require('../lib/naver_editor');
+const naverPublishHelper = require('../lib/playwright_naver_publish');
 
 /**
  * Naver Blog Publish Agent

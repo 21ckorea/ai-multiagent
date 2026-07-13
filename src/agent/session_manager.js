@@ -70,7 +70,8 @@ async function launchBrowser(profileDir = DEFAULT_PROFILE_DIR) {
   fs.mkdirSync(profileDir, { recursive: true });
 
   const context = await chromium.launchPersistentContext(profileDir, {
-    headless: false,
+    headless: process.env.HEADLESS === 'true',
+    channel: 'chrome',
     args: [
       '--no-first-run',
       '--no-default-browser-check',

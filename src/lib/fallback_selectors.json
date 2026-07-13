@@ -1,0 +1,285 @@
+{
+  "tistory": {
+    "kakaoLogin": {
+      "idField": [
+        "#loginId--1",
+        "[id^=\"loginId--\"]",
+        "input.tf_g[name=\"loginId\"]",
+        "input[name=\"loginId\"]"
+      ],
+      "passwordField": [
+        "#password--2",
+        "[id^=\"password--\"]",
+        "input.tf_g[name=\"password\"][type=\"password\"]",
+        "input[name=\"password\"][type=\"password\"]"
+      ],
+      "submitBtn": [
+        "button.btn_g.highlight.submit[type=\"submit\"]",
+        "button.btn_g.submit",
+        "button[type=\"submit\"].submit.btn_g"
+      ],
+      "errorBox": ".box_desc[role=\"alert\"]",
+      "errorText": ".desc_error"
+    },
+    "editor": {
+      "modeOpenBtn": "#editor-mode-layer-btn-open",
+      "htmlModeBtn": "#editor-mode-html",
+      "titleInput": [
+        "#post-title-inp",
+        "textarea.textarea_tit"
+      ],
+      "codeMirror": ".CodeMirror",
+      "tinyIframe": [
+        "iframe.tox-edit-area__iframe",
+        "iframe#editor-tistory_ifr",
+        "iframe[id^=\"tistory_\"]",
+        "iframe.mce-edit-area"
+      ],
+      "tagInput": [
+        "input.tf_g[name=\"tagText\"]",
+        "input#tagText",
+        "input[name=\"tagText\"]",
+        "#tagText"
+      ],
+      "tagDelete": ".editor_tag .btn_delete"
+    },
+    "category": {
+      "btn": [
+        "#category-btn",
+        "button#category-btn",
+        ".btn_category"
+      ],
+      "list": [
+        "#category-list",
+        ".category_list",
+        "[role=\"listbox\"]"
+      ],
+      "items": [
+        "[id^=\"category-item-\"]",
+        ".category-item",
+        "[role=\"option\"]"
+      ],
+      "label": [
+        ".mce-text",
+        ".txt_category",
+        "span"
+      ]
+    },
+    "publish": {
+      "layerBtn": "#publish-layer-btn",
+      "publicRadio": "#open20",
+      "privateRadio": "#open0",
+      "publishBtn": "#publish-btn"
+    },
+    "managePosts": {
+      "postLink": [
+        ".tit_post a.link_cont",
+        "a.link_cont[href*=\"/entry/\"]",
+        "a.link_cont",
+        ".post_cont a.link_cont"
+      ],
+      "postList": [
+        "ul.list_post.list_post_type2 > li",
+        "ul.list_post > li",
+        ".list_post > li"
+      ]
+    }
+  },
+  "naver": {
+    "editor": {
+      "wrap": [
+        "article.se-components-wrap",
+        ".se-components-wrap"
+      ],
+      "title": [
+        ".se-component.se-documentTitle",
+        ".se-documentTitle"
+      ],
+      "body": [
+        ".se-component.se-text[data-a11y-title=\"본문\"]",
+        ".se-component[data-a11y-title=\"본문\"]",
+        "[data-a11y-title=\"본문\"]",
+        ".se-component.se-text"
+      ],
+      "textModule": [
+        ".se-module.se-module-text",
+        ".se-module-text"
+      ],
+      "paragraph": [
+        "p.se-text-paragraph",
+        ".se-text-paragraph"
+      ],
+      "textNode": "span.__se-node",
+      "contenteditable": "[contenteditable='true']"
+    },
+    "toolbar": {
+      "fontFamily": [
+        "button.se-font-family-toolbar-button[data-name='font-family']",
+        "button[data-name=\"font-family\"][data-type=\"label-select\"]"
+      ],
+      "fontMaruburi": "button[data-name=\"font-family\"][data-value=\"nanummaruburi\"]",
+      "fontSize": [
+        "button.se-font-size-code-toolbar-button[data-name='font-size']",
+        "button[data-name=\"font-size\"][data-type=\"label-select\"]"
+      ],
+      "fontSize19": "button[data-name=\"font-size\"][data-value=\"fs19\"]",
+      "alignDropdown": [
+        "button[data-name=\"align-drop-down-with-justify\"]",
+        "button.se-property-toolbar-drop-down-button[data-name='align-drop-down-with-justify']"
+      ],
+      "alignCenter": "button[data-name=\"align-drop-down-with-justify\"][data-value=\"center\"]",
+      "listDropdown": [
+        "button.se-list-bullet-toolbar-button[data-name='list']",
+        "button.se-property-toolbar-drop-down-button[data-name='list']"
+      ],
+      "listReset": [
+        "button.se-toolbar-option-list-reset-button[data-name=\"list\"][data-value=\"reset\"]",
+        "button[data-name=\"list\"][data-value=\"reset\"]"
+      ]
+    },
+    "sticker": {
+      "btn": [
+        "button.se-sticker-toolbar-button[data-name=\"sticker\"]",
+        "button[data-log=\"dot.sticker\"]",
+        "button.se-sticker-toolbar-button"
+      ],
+      "list": [
+        "ul.se-sidebar-list.se-is-on",
+        "ul.se-sidebar-list"
+      ],
+      "items": "button.se-sidebar-element-sticker"
+    },
+    "contextMenu": {
+      "selectAll": [
+        ".se-context-menu-button-select-all[data-log=\"ctm.selectall\"]",
+        "[data-log=\"ctm.selectall\"]",
+        ".se-context-menu-button-select-all"
+      ]
+    },
+    "draft": {
+      "popup": [
+        ".se-popup-container.__se-pop-layer",
+        ".se-popup-container"
+      ],
+      "cancelBtn": [
+        "button.se-popup-button-cancel",
+        ".se-popup-button-cancel"
+      ]
+    },
+    "publish": {
+      "openBtn": [
+        "button[data-click-area=\"tpb.publish\"]",
+        "button.publish_btn__m9KHH",
+        ".publish_btn__m9KHH"
+      ],
+      "privateLabel": [
+        "label[for=\"open_private\"]",
+        "#open_private",
+        "input[name=\"open_type\"][value=\"0\"]"
+      ],
+      "confirmBtn": [
+        "button[data-testid=\"seOnePublishBtn\"]",
+        "button.confirm_btn__WEaBq",
+        "button[data-click-area=\"tpb*i.publish\"]"
+      ]
+    }
+  },
+  "gemini": {
+    "composer": {
+      "editor": [
+        "rich-textarea.text-input-field_textarea > div.ql-editor[role=\"textbox\"]",
+        ".text-input-field_textarea-wrapper rich-textarea.text-input-field_textarea div.ql-editor[role='textbox']",
+        "div.ql-editor[contenteditable=\"true\"]"
+      ],
+      "sendBtn": [
+        "button.send-button[aria-disabled=\"false\"]",
+        ".send-button-container button.send-button:not([aria-disabled='true'])",
+        "button.send-button",
+        "button[aria-label*=\"보내\"]",
+        "button[aria-label*=\"Send\"]"
+      ]
+    },
+    "response": {
+      "copyBtn": [
+        "[data-test-id=\"copy-button\"]",
+        "button.copy-button"
+      ],
+      "container": [
+        "[data-test-id=\"model-response\"]",
+        "[data-test-id=\"message-content\"]",
+        ".model-response-text"
+      ]
+    },
+    "image": {
+      "toolBtn": [
+        "button[aria-label*=\"이미지 만들기\"]",
+        "button.card.card-zero-state[aria-label*='이미지']",
+        "button.card-zero-state[aria-label*='이미지']"
+      ],
+      "uploadToolsBtn": [
+        "button[aria-label=\"업로드 및 도구\"]",
+        "gem-icon-button.menu-button button[aria-haspopup='menu']",
+        "simplified-input-menu button[aria-haspopup='menu']"
+      ],
+      "imageMenuLabel": [
+        "div.label.gem-menu-item-label",
+        ".gem-menu-item-label"
+      ],
+      "imageMenuButton": [
+        "toolbox-drawer-item button",
+        "mat-action-list button",
+        "toolbox-drawer button"
+      ],
+      "imageMenuItem": [
+        "toolbox-drawer-item button",
+        "div.label.gem-menu-item-label",
+        ".gem-menu-item-label"
+      ],
+      "overlay": "div.overlay-container",
+      "imageBtn": "button.image-button",
+      "copyBtn": [
+        "copy-button button[aria-label=\"이미지 복사\"]",
+        "copy-button button.copy-button",
+        "button.copy-button[aria-label=\"이미지 복사\"]",
+        "button[mattooltip=\"이미지 복사\"]"
+      ],
+      "closeDialog": [
+        "button[mat-dialog-close][aria-label=\"닫기\"]",
+        "button.arrow-back-button[aria-label=\"닫기\"]",
+        "button[mat-dialog-close].arrow-back-button"
+      ]
+    },
+    "spa": {
+      "editor": "div.ql-editor[role=\"textbox\"]",
+      "chatWindow": "chat-window",
+      "app": "gemini-app"
+    }
+  },
+  "google": {
+    "signin": {
+      "emailField": [
+        "#identifierId",
+        "input[name=\"identifier\"]",
+        "input.whsOnd.zHQkBf",
+        "input[type=\"email\"][jsname=\"YPqjbf\"]",
+        "input[type=\"email\"]"
+      ],
+      "emailNext": [
+        "#identifierNext",
+        "#identifierNext button[jsname='LgbsSe']",
+        "#identifierNext button",
+        "button[jsname=\"LgbsSe\"]"
+      ],
+      "passwordField": [
+        "input[name=\"Passwd\"]",
+        "input[type=\"password\"][jsname=\"YPqjbf\"]",
+        "input[type=\"password\"]"
+      ],
+      "passwordNext": [
+        "#passwordNext",
+        "#passwordNext button[jsname='LgbsSe']",
+        "#passwordNext button"
+      ]
+    }
+  }
+}
