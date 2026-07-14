@@ -456,30 +456,39 @@
           </div>
         </div>
 
-        <!-- 로그 & 결과 -->
-        <div class="runner-output">
-          <div class="card log-card">
-            <div class="card-header">
-              <div class="card-title-row">
-                <span class="card-icon">📋</span>
-                <h2 class="card-title">실시간 로그</h2>
+        <!-- 로그 & 결과 탭 영역 -->
+        <div class="runner-output" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 500px;">
+          <div class="card runner-tabs-card" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <div class="card-header" style="border-bottom: 1px solid var(--border); margin-bottom: 0; padding-bottom: 0;">
+              <div class="runner-tabs" style="display: flex; gap: 20px;">
+                <button class="runner-tab-btn active" id="tab-btn-log" onclick="switchRunnerTab('log')" style="background: none; border: none; color: var(--text-primary); padding: 10px 0; font-size: 15px; font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--primary);">
+                  <span class="card-icon">📋</span> 실시간 로그
+                </button>
+                <button class="runner-tab-btn" id="tab-btn-result" onclick="switchRunnerTab('result')" style="background: none; border: none; color: var(--text-muted); padding: 10px 0; font-size: 15px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;">
+                  <span class="card-icon">✨</span> 최종 결과
+                </button>
               </div>
-              <button class="btn btn-sm btn-outline" onclick="clearLog()">지우기</button>
-            </div>
-            <div class="log-viewer" id="log-viewer">
-              <div class="log-empty">실행을 시작하면 로그가 여기에 표시됩니다.</div>
-            </div>
-          </div>
-
-          <div class="card result-card" id="result-card" style="display:none;">
-            <div class="card-header">
-              <div class="card-title-row">
-                <span class="card-icon">✨</span>
-                <h2 class="card-title">최종 결과</h2>
+              <div class="runner-tab-actions" style="margin-left: auto; margin-bottom: 8px;">
+                <button class="btn btn-sm btn-outline" id="btn-clear-log" onclick="clearLog()">지우기</button>
+                <button class="btn btn-sm btn-outline" id="btn-copy-result" onclick="copyResult()" style="display:none;">📋 복사</button>
               </div>
-              <button class="btn btn-sm btn-outline" onclick="copyResult()">📋 복사</button>
             </div>
-            <div class="result-viewer" id="result-viewer"></div>
+            
+            <div class="card-body" style="flex: 1; display: flex; flex-direction: column; padding: 16px; overflow: hidden;">
+              <!-- 실시간 로그 내용 -->
+              <div class="runner-tab-content active" id="runner-content-log" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="log-viewer" id="log-viewer" style="flex: 1; max-height: none; height: 100%; border: none; padding: 0; overflow-y: auto;">
+                  <div class="log-empty">실행을 시작하면 로그가 여기에 표시됩니다.</div>
+                </div>
+              </div>
+              
+              <!-- 최종 결과 내용 -->
+              <div class="runner-tab-content" id="runner-content-result" style="flex: 1; display: none; flex-direction: column; overflow: hidden;">
+                <div class="result-viewer" id="result-viewer" style="flex: 1; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; padding: 0; border: none; max-height: none;">
+                  <div class="log-empty">실행이 완료되면 최종 결과가 표시됩니다.</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

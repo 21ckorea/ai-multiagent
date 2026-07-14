@@ -671,7 +671,11 @@ function handleSSEEvent(data) {
       updateRunBadge('running', '실행 중');
       document.getElementById('btn-run').disabled = true;
       document.getElementById('btn-abort').disabled = false;
-      document.getElementById('result-card').style.display = 'none';
+      // 결과 탭 초기화
+      document.getElementById('runner-content-result').style.display = 'none';
+      document.getElementById('btn-copy-result').style.display = 'none';
+      document.getElementById('result-viewer').innerHTML = '<div class="log-empty">실행이 완료되면 최종 결과가 표시됩니다.</div>';
+      switchRunnerTab('log');
       document.getElementById('progress-section').style.display = 'block';
 
       addLogSep();
@@ -724,14 +728,15 @@ function handleSSEEvent(data) {
 
       // 최종 결과 표시 (전체 단계 결과 요약)
       if (State.stepResults && State.stepResults.length > 0) {
-        document.getElementById('result-card').style.display = 'flex';
         const resultHtml = buildFullResultText(State.stepResults);
         document.getElementById('result-viewer').textContent = resultHtml;
         State.finalResult = resultHtml;
       } else if (State.finalResult) {
-        document.getElementById('result-card').style.display = 'flex';
         document.getElementById('result-viewer').textContent = State.finalResult;
       }
+      // 완료 시 자동으로 결과 탭으로 전환
+      switchRunnerTab('result');
+      document.getElementById('btn-copy-result').style.display = 'inline-flex';
       break;
 
     case 'aborted':
@@ -977,6 +982,38 @@ async function importData(event) {
     showToast(`가져오기 오류: ${err.message}`);
   } finally {
     event.target.value = ''; // input 초기화
+  }
+}
+
+// ─── 탭 전환 ────────────────────────────────────────────────
+function switchRunnerTab(tab) {
+  const logBtn = document.getElementById('tab-btn-log');
+  const resultBtn = document.getElementById('tab-btn-result');
+  const logContent = document.getElementById('runner-content-log');
+  const resultContent = document.getElementById('runner-content-result');
+  const clearLogBtn = document.getElementById('btn-clear-log');
+  const copyResultBtn = document.getElementById('btn-copy-result');
+
+  if (tab === 'log') {
+    // 로그 탭 활성화
+    logBtn.style.color = 'var(--text-primary)';
+    logBtn.style.borderBottom = '2px solid var(--primary)';
+    resultBtn.style.color = 'var(--text-muted)';
+    resultBtn.style.borderBottom = '2px solid transparent';
+    logContent.style.display = 'flex';
+    resultContent.style.display = 'none';
+    clearLogBtn.style.display = 'inline-flex';
+    copyResultBtn.style.display = 'none';
+  } else {
+    // 결과 탭 활성화
+    resultBtn.style.color = 'var(--text-primary)';
+    resultBtn.style.borderBottom = '2px solid var(--primary)';
+    logBtn.style.color = 'var(--text-muted)';
+    logBtn.style.borderBottom = '2px solid transparent';
+    resultContent.style.display = 'flex';
+    logContent.style.display = 'none';
+    clearLogBtn.style.display = 'none';
+    copyResultBtn.style.display = 'inline-flex';
   }
 }
 

@@ -232,6 +232,9 @@ body {
   flex: 1;
 }
 .tab-content.active { display: flex; flex-direction: column; }
+#tab-runner.tab-content.active {
+  overflow: hidden; /* 러너 탭은 내부에서 스크롤 관리 */
+}
 
 /* ─── 카드 ─────────────────────────────────────────────────── */
 .card {
@@ -1118,6 +1121,7 @@ body {
   gap: 20px;
   flex: 1;
   min-height: 0;
+  align-items: stretch;
 }
 
 .runner-control {
@@ -1188,17 +1192,76 @@ body {
 
 .progress-step-icon { font-size: 14px; }
 
-/* ─── 실행 출력 ─────────────────────────────────────────────── */
+/* ─── 실행 출력 ───────────────────────────────────────────── */
 .runner-output {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
-.log-card, .result-card {
+.runner-tabs-card {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.runner-tabs-card .card-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.runner-tabs {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.runner-tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.runner-tab-btn:hover { color: var(--text-primary); }
+
+.runner-tab-actions {
+  margin-left: auto;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.runner-tabs-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.runner-tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .log-viewer {
@@ -1208,11 +1271,25 @@ body {
   background: var(--bg-base);
   border-radius: var(--radius-sm);
   padding: 14px;
-  min-height: 200px;
-  max-height: 360px;
   overflow-y: auto;
   border: 1px solid var(--border);
   line-height: 1.8;
+  min-height: 0;
+}
+
+.result-viewer {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--bg-base);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 0;
 }
 
 .log-empty {
