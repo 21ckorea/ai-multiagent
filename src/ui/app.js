@@ -693,7 +693,7 @@ function handleSSEEvent(data) {
     case 'step_prompt':
       // ── 질의 프롬프트 전문 표시 ──
       addLog(`📤 [질의 프롬프트]`, 'info');
-      addLogBlock(data.promptPreview || data.prompt || '', 'prompt-block');
+      addLogBlock(data.prompt || '', 'prompt-block');
       break;
 
     case 'step_log':
@@ -703,7 +703,7 @@ function handleSSEEvent(data) {
     case 'step_done':
       // ── 응답 전문 표시 ──
       addLog(`📥 [Gemini 응답] (${(data.output || '').length}자, ${data.loopCount}회 시도)`, 'success');
-      addLogBlock(data.outputPreview || data.output || '', 'response-block');
+      addLogBlock(data.output || '', 'response-block');
       addLog(`✅ ${data.stepName} 완료`, 'success');
       updateProgressStepByName(data.stepName, 'done');
 

@@ -278,11 +278,10 @@ async function runWorkflow(workflow, initialInput) {
 
     // ── 질의 프롬프트 로그 (전문 전송) ────────────────────────────
     sendSSE({
-      type:          'step_prompt',
-      stepId:        step.id,
-      stepName:      step.name,
-      prompt:        resolvedPrompt,
-      promptPreview: resolvedPrompt.slice(0, 400) + (resolvedPrompt.length > 400 ? '\n...(이하 생략)' : ''),
+      type:     'step_prompt',
+      stepId:   step.id,
+      stepName: step.name,
+      prompt:   resolvedPrompt,
     });
 
     let output    = '';
@@ -357,11 +356,10 @@ async function runWorkflow(workflow, initialInput) {
               
               // step_done 전송 (이 스텝은 여기서 종료)
               sendSSE({
-                type:          'step_done',
-                stepId:        step.id,
-                stepName:      step.name,
+                type:      'step_done',
+                stepId:    step.id,
+                stepName:  step.name,
                 output,
-                outputPreview: output.slice(0, 600) + (output.length > 600 ? '\n...(이하 생략)' : ''),
                 loopCount,
               });
               
@@ -404,11 +402,10 @@ async function runWorkflow(workflow, initialInput) {
 
     // ── 단계 완료: 응답 전문 포함해서 전송 ────────────────────────
     sendSSE({
-      type:          'step_done',
-      stepId:        step.id,
-      stepName:      step.name,
-      output,                                              // 전문
-      outputPreview: output.slice(0, 600) + (output.length > 600 ? '\n...(이하 생략)' : ''),
+      type:      'step_done',
+      stepId:    step.id,
+      stepName:  step.name,
+      output,
       loopCount,
     });
     
