@@ -103,14 +103,19 @@ async function getOrCreateContext(headless) {
     await sleep(500); // 프로세스 종료 대기
   } catch { /* 실행 중인 프로세스가 없거나 실패 시 무시 */ }
 
+  const args = [
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-blink-features=AutomationControlled',
+  ];
+  if (headless) {
+    args.push('--window-position=-32000,-32000');
+  }
+
   const context = await chromium.launchPersistentContext(DEFAULT_PROFILE_DIR, {
     headless: headless,
     channel: 'chrome',
-    args: [
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-blink-features=AutomationControlled',
-    ],
+    args: args,
     viewport: { width: 1280, height: 800 },
     locale:   'ko-KR',
   });
