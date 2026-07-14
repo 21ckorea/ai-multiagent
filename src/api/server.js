@@ -199,6 +199,21 @@ app.get('/api/events', (req, res) => {
   req.on('close', () => sseClients.delete(res));
 });
 
+// ── 앱 정보 API ────────────────────────────────────────────────────────
+app.get('/api/app-info', (req, res) => {
+  try {
+    const pkgPath = require('path').join(__dirname, '../../package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    const stat = fs.statSync(pkgPath);
+    res.json({
+      version: pkg.version,
+      buildDate: stat.mtime.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+    });
+  } catch (err) {
+    res.json({ version: '1.0.0', buildDate: '알 수 없음' });
+  }
+});
+
 /** 워크플로우 실행 */
 app.post('/api/run', async (req, res) => {
   const { workflowId, input } = req.body || {};
