@@ -129,7 +129,7 @@ function logNaverPublishMarker(logger, payload) {
 }
 
 async function run(options = {}) {
-  const logger = extendBridgeProtocol(createLogger(ENGINE));
+  const logger = options.logger || extendBridgeProtocol(createLogger(ENGINE));
   const args = { ...parseArgs(), ...options };
   const blogId = normalizeNaverBlogId(args.blogId);
   const writeUrl = buildNaverBlogWriteUrl(blogId);
@@ -222,38 +222,49 @@ async function run(options = {}) {
     await page.goto(writeUrl, { waitUntil: 'domcontentloaded', timeout: PAGE_LOAD_TIMEOUT_MS });
 
     const startUrl = page.url();
+    let loginNeeded = false;
     if (isNaverLoginFailureUrl(startUrl)) {
+      loginNeeded = true;
       logNaverPublishMarker(logger, {
         ok: false,
-        reason: 'login_required',
+        reason: 'login_required_waiting',
         url: startUrl,
       });
-      logger.result(RESULT.FAILED, 'login_required');
-      return EXIT.FAILED;
+      logger.info('네이버 로그인이 필요합니다. 브라우저 창에서 60초 내에 직접 로그인해 주세요.');
     }
 
-    if (!isNaverBlogWriteSuccessUrl(startUrl, blogId)) {
-      // editor URL이 아직 아니면 잠시 폴링
+    if (loginNeeded || !isNaverBlogWriteSuccessUrl(startUrl, blogId)) {
       let ready = false;
-      const editorWaitMs = 20000;
+      const editorWaitMs = loginNeeded ? 60000 : 20000;
       const editorWaitStart = Date.now();
+      
       while (Date.now() - editorWaitStart < editorWaitMs) {
-        const url = page.url();
-        if (isNaverLoginFailureUrl(url)) {
-          logNaverPublishMarker(logger, { ok: false, reason: 'login_required', url });
-          logger.result(RESULT.FAILED, 'login_required');
-          return EXIT.FAILED;
-        }
-        if (isNaverBlogWriteSuccessUrl(url, blogId)) {
+        const currentUrl = page.url();
+        if (isNaverBlogWriteSuccessUrl(currentUrl, blogId)) {
           ready = true;
           break;
         }
-        await sleep(500);
+        // 로그인 성공 후 리다이렉트 처리가 안될 수도 있으니, 
+        // URL이 로그인창이 아니면서 블로그 홈 등인 경우 명시적으로 다시 이동 시도
+        if (loginNeeded && !isNaverLoginFailureUrl(currentUrl) && !currentUrl.includes('Redirect=Write')) {
+            await page.goto(writeUrl, { waitUntil: 'domcontentloaded', timeout: PAGE_LOAD_TIMEOUT_MS }).catch(()=>{});
+        }
+        await sleep(1000);
       }
+      
       if (!ready) {
-        logNaverPublishMarker(logger, { ok: false, reason: 'editor_url_timeout' });
-        logger.result(RESULT.FAILED, 'editor_url_timeout');
-        return EXIT.FAILED;
+        const finalUrl = page.url();
+        if (isNaverLoginFailureUrl(finalUrl)) {
+           logNaverPublishMarker(logger, { ok: false, reason: 'login_required', url: finalUrl });
+           logger.result(RESULT.FAILED, 'login_required');
+           return EXIT.FAILED;
+        } else {
+           logNaverPublishMarker(logger, { ok: false, reason: 'editor_url_timeout' });
+           logger.result(RESULT.FAILED, 'editor_url_timeout');
+           return EXIT.FAILED;
+        }
+      } else if (loginNeeded) {
+        logger.info('네이버 로그인 감지 완료! 포스팅을 계속 진행합니다.');
       }
     }
 
