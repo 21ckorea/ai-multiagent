@@ -81,12 +81,13 @@ async function getOrCreateContext(headless) {
       _page = null;
     } else {
       // 페이지가 살아있는지 확인
-    try {
-      await _page.title();
-      return { context: _context, page: _page };
-    } catch {
-      _context = null;
-      _page    = null;
+      try {
+        await _page.title();
+        return { context: _context, page: _page };
+      } catch {
+        _context = null;
+        _page    = null;
+      }
     }
   }
 
