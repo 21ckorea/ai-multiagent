@@ -40,7 +40,12 @@
     },
     "win": {
       "icon": "build/icon.png",
-      "target": ["nsis"]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
