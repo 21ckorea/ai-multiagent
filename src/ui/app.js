@@ -1026,7 +1026,7 @@ async function init() {
     const res = await fetch('/api/app-info');
     if (res.ok) {
       const info = await res.json();
-      document.getElementById('app-version').textContent = `v${info.version} (빌드: ${info.buildDate})`;
+      document.getElementById('app-version').innerHTML = `v${info.version}<br>(${info.buildDate})`;
     }
   } catch (err) {
     console.error('버전 정보를 불러오는데 실패했습니다.', err);
