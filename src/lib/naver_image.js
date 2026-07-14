@@ -22,6 +22,7 @@ const { sleep } = require('./common');
 const { buildGeminiImagePrompt, runGeminiImageGenerationWithRestarts } = require('./gemini_image');
 const { reloadGeminiPageForRetry } = require('./gemini_compose');
 const { resolveEditorFrame } = require('./naver_editor');
+const { isRunningHeadless } = require('../agent/gemini_agent');
 
 const isMac = process.platform === 'darwin';
 
@@ -34,7 +35,8 @@ async function writeImageToClipboardInPage(page, dataUrl, logger) {
   } catch {
     /* ignore */
   }
-  await page.bringToFront().catch(() => {});
+  // bringToFront: headless 모드에서는 창을 인식 화면으로 끌어올리지 않음
+  if (!isRunningHeadless()) await page.bringToFront().catch(() => {});
   const wrote = await page.evaluate(async (durl) => {
     try {
       const res = await fetch(durl);
@@ -142,7 +144,8 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
   logger?.info?.(`[NAVER][IMG] marker found "${matchedText.slice(0, 48)}"`);
 
   // 2) Focus the editor by clicking the marker element.
-  await naverPage.bringToFront().catch(() => {});
+  // bringToFront: headless 모드에서는 창을 인식 화면으로 끌어올리지 않음
+  if (!isRunningHeadless()) await naverPage.bringToFront().catch(() => {});
   try {
     await el.scrollIntoViewIfNeeded().catch(() => {});
     await el.click().catch(() => {});
@@ -214,41 +217,25 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       `[NAVER][IMG] marker box top(${Math.round(cx)},${Math.round(cy)}) h=${Math.round(box.height)} imgBefore=${imgBefore}`,
     );
 
-    // ── Step 1: 클릭으로 iframe 포커스 확보 ─────────────────────────────────
-    // naverPage.mouse.click → iframe이 포커스되어 이후 keyboard 이벤트가 iframe으로 전달됨
-    await naverPage.mouse.click(cx, cy);
+    // ── Step 1: ElementHandle.click을 이용한 네이티브 트리플 클릭 ─────────────
+    // Playwright가 자동으로 엘리먼트를 스크롤하고 중앙 좌표를 계산해 트리플 클릭합니다.
+    // 마커가 span.__se-node이므로 정확히 텍스트 위에 트리플 클릭이 발생하며,
+    // 네이티브 클릭이므로 스마트에디터의 내부 에디터 모델과 selection이 완벽히 동기화됩니다.
+    await el.click({ clickCount: 3, timeout: 5000 }).catch((err) => {
+      logger?.info?.(`[NAVER][IMG] native triple click failed: ${err.message}`);
+    });
     await sleep(200);
 
-    // ── Step 2: JS Range API로 마커 P 전체 선택 (macOS/Windows 공통) ─────────
-    // CDP triple-click은 Windows에서 iframe selection이 window.getSelection()에
-    // 반영되지 않아 selLen=0 → Backspace가 마커가 아닌 엉뚱한 줄을 삭제함.
-    const selLen = await editorFrame.evaluate((targetText) => {
-      try {
-        const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
-        const w = norm(targetText);
-        let targetP = null;
-        for (const p of document.querySelectorAll('p.se-text-paragraph')) {
-          if (p.closest('.se-documentTitle') || p.closest('.se-section-quotation')) continue;
-          if (norm(p.textContent) === w
-            || norm(p.textContent).startsWith('이미지 삽입공간')
-            || norm(p.textContent).startsWith('썸네일 삽입 공간')) {
-            targetP = p;
-            break;
-          }
-        }
-        if (!targetP) return 0;
-        const range = document.createRange();
-        range.selectNodeContents(targetP);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        return (sel.toString() || '').replace(/\s+/g, ' ').trim().length;
-      } catch (e) { return 0; }
-    }, matchedText);
-    logger?.info?.(`[NAVER][IMG] JS range select selLen=${selLen}`);
+    // 선택 확인 (디버깅용)
+    const selLen = await editorFrame
+      .evaluate(() => (window.getSelection()?.toString() || '').replace(/\s+/g, ' ').trim().length)
+      .catch(() => 0);
+    logger?.info?.(`[NAVER][IMG] triple-click selLen=${selLen}`);
 
-    // ── Step 3: 선택 실패 시 fallback (Home + Shift+End) ────────────────────
+    // ── Step 2: fallback (선택이 안 되었을 경우 키보드로 전체 선택) ──────────
     if (selLen === 0) {
+      await el.click().catch(() => {});
+      await sleep(100);
       await naverPage.keyboard.press('Home');
       await sleep(50);
       await naverPage.keyboard.down('Shift');
@@ -257,11 +244,9 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       await sleep(100);
     }
 
-    // ── Step 4: 마커 텍스트 삭제 ────────────────────────────────────────────
-    // CDP dispatchKeyEvent는 메인 페이지로만 가서 iframe에 포커스가 없으면 무시됨.
-    // naverPage.keyboard는 현재 포커스된 요소(iframe)로 라우팅되어 정상 동작함.
+    // ── Step 3: 선택된 마커 텍스트 삭제 ──────────────────────────────────────
     await naverPage.keyboard.press('Backspace');
-    await sleep(120);
+    await sleep(150);
 
     // ── Step 5: 이미지 붙여넣기 ──────────────────────────────────────────────
     const pasteKey = isMac ? 'Meta+V' : 'Control+V';
