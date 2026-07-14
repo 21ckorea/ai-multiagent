@@ -53,22 +53,19 @@ app.on('ready', async () => {
   createWindow();
   mainWindow.loadURL(`data:text/html,<html><body style="background:#0f172a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;color:#94a3b8;"><div style="text-align:center"><h2 style="color:#a78bfa">AI-Multiagent</h2><p>서버 시작 중...</p></div></body></html>`);
 
-  // 2. Express 서버 백그라운드 실행
-  const serverPath = path.join(__dirname, 'src/api/server.js');
+  // 2. 메인 프로세스에서 Express 서버 직접 실행 (ASAR 지원 유지)
   const userDataDir = app.getPath('userData');
-  serverProcess = fork(serverPath, [], {
-    env: {
-      ...process.env,
-      PORT: String(PORT),
-      HEADLESS: 'false',
-      APP_DATA_DIR: userDataDir
-    }
-  });
+  process.env.PORT = String(PORT);
+  process.env.HEADLESS = 'false';
+  process.env.APP_DATA_DIR = userDataDir;
 
-  serverProcess.on('error', (err) => {
-    dialog.showErrorBox('서버 실행 오류', `서버를 시작하지 못했습니다:\n${err.message}`);
+  try {
+    require('./src/api/server.js');
+  } catch (err) {
+    dialog.showErrorBox('서버 실행 오류', `서버 코드를 불러오지 못했습니다:\n${err.message}`);
     app.quit();
-  });
+    return;
+  }
 
   try {
     // 3. 서버 준비 대기 후 UI 로드
@@ -92,12 +89,5 @@ app.on('activate', function () {
   if (mainWindow === null) {
     createWindow();
     mainWindow.loadURL(`http://localhost:${PORT}`);
-  }
-});
-
-// 앱 종료 시 백그라운드 서버도 함께 종료
-app.on('will-quit', () => {
-  if (serverProcess) {
-    serverProcess.kill();
   }
 });
