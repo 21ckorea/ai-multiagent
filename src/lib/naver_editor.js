@@ -366,20 +366,34 @@ await handle?.dispose?.();
 // substring inside it, and return the pixel rects (iframe-relative) of the
 // substring's start/end so a real CDP drag can select exactly that text.
 function naverLocateHighlightRectsMain(arg) {
-const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
-const wantPara = norm(arg && arg.paraText);
-const wantHl = norm(arg && arg.hlText);
-if (!wantHl) return { ok: false, reason: 'empty_hl' };
+  const norm = (s) => (s || '').replace(/[\u200B\u200b\ufeff\u00a0]/g, '').replace(/\s+/g, ' ').trim();
+  const wantPara = norm(arg && arg.paraText);
+  const wantHl = norm(arg && arg.hlText);
+  if (!wantHl) return { ok: false, reason: 'empty_hl' };
 
-let para = null;
-for (const p of document.querySelectorAll('p.se-text-paragraph')) {
-if (p.closest('.se-documentTitle')) continue;
-if (norm(p.textContent) === wantPara) {
-para = p;
-break;
-}
-}
-if (!para) return { ok: false, reason: 'para_not_found' };
+  let para = null;
+  const paragraphs = Array.from(document.querySelectorAll('p.se-text-paragraph'))
+    .filter(p => !p.closest('.se-documentTitle'));
+
+  // 1차 시도: 본문 문단과 전체 텍스트가 정확히 일치하는지 확인
+  for (const p of paragraphs) {
+    if (norm(p.textContent) === wantPara) {
+      para = p;
+      break;
+    }
+  }
+
+  // 2차 시도 (대비책): 정확히 일치하지 않는 경우, 하이라이트할 텍스트를 포함하고 있는 문단 찾기
+  if (!para) {
+    for (const p of paragraphs) {
+      if (norm(p.textContent).includes(wantHl)) {
+        para = p;
+        break;
+      }
+    }
+  }
+
+  if (!para) return { ok: false, reason: 'para_not_found' };
 
 // Concatenate the paragraph's text nodes; locate the highlight in the raw text.
 const walker = document.createTreeWalker(para, NodeFilter.SHOW_TEXT, null);
