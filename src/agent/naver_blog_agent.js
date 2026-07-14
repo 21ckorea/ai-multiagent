@@ -117,13 +117,21 @@ async function execute(prompt, options) {
         }
       }
 
+      const customLogger = {
+        info: (msg) => options?.log?.(msg),
+        error: (msg) => options?.log?.(`[ERROR] ${msg}`),
+        warn: (msg) => options?.log?.(`[WARN] ${msg}`),
+        result: (status, msg) => options?.log?.(`[RESULT: ${status}] ${msg}`)
+      };
+
       const exitCode = await naverPublishHelper.run({
         blogId: blogId,
         naverId: params.naverId || '',
         contentFile: tempFile,
         images: imageArray,
         visibility: '0', // 0: 비공개(초안) 우선
-        noPublish: false
+        noPublish: false,
+        logger: customLogger
       });
       
       if (exitCode === 0) {
