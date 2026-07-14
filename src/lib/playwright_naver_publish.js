@@ -216,13 +216,32 @@ async function run(options = {}) {
       ignoreDefaultArgs: PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
     });
     await applyPlaywrightStealthInitScript(context);
-    const page = context.pages()[0] || await context.newPage();
+    let page = context.pages()[0] || await context.newPage();
 
     logger.info(`Navigating to ${writeUrl}`);
     await page.goto(writeUrl, { waitUntil: 'domcontentloaded', timeout: PAGE_LOAD_TIMEOUT_MS });
 
-    const startUrl = page.url();
+    let startUrl = page.url();
     let loginNeeded = false;
+    
+    // 만약 헤드리스 모드인데 로그인이 필요하면, 헤드풀 모드로 재시작
+    if (isNaverLoginFailureUrl(startUrl) && args.headless === true) {
+      logger.info('[NAVER] 헤드리스 모드에서 로그인이 필요합니다. 창 모드로 브라우저를 재시작합니다...');
+      await context.close();
+      
+      context = await chromium.launchPersistentContext(userDataDir, {
+        headless: false,
+        channel: 'chrome',
+        args: CHROME_STEALTH_ARGS,
+        ignoreDefaultArgs: PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
+      });
+      await applyPlaywrightStealthInitScript(context);
+      page = context.pages()[0] || await context.newPage();
+      
+      await page.goto(writeUrl, { waitUntil: 'domcontentloaded', timeout: PAGE_LOAD_TIMEOUT_MS });
+      startUrl = page.url();
+    }
+
     if (isNaverLoginFailureUrl(startUrl)) {
       loginNeeded = true;
       logNaverPublishMarker(logger, {
@@ -230,7 +249,7 @@ async function run(options = {}) {
         reason: 'login_required_waiting',
         url: startUrl,
       });
-      logger.info('네이버 로그인이 필요합니다. 브라우저 창에서 60초 내에 직접 로그인해 주세요.');
+      logger.info('네이버 로그인이 필요합니다. 브라우저 창에서 60초 내에 직접 로그인해 주세요. (반드시 "로그인 상태 유지"를 체크하세요!)');
     }
 
     if (loginNeeded || !isNaverBlogWriteSuccessUrl(startUrl, blogId)) {
