@@ -66,12 +66,13 @@ const HYDRATION_MS      = 2_500;
 let _context = null;
 let _page    = null;
 
+// 현재 headless 여부를 외부 모듈에서 확인할 수 있도록 노출
+let _currentHeadlessMode = null;
+function isRunningHeadless() { return _currentHeadlessMode === true; }
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
-
-// ── 브라우저 컨텍스트 획득/재사용 ────────────────────────────────────────────
-let _currentHeadlessMode = null;
 
 async function getOrCreateContext(headless) {
   if (_context && _page) {
@@ -109,7 +110,11 @@ async function getOrCreateContext(headless) {
     '--disable-blink-features=AutomationControlled',
   ];
   if (headless) {
+    // 윈도우 화면 완전히 숨기기: 화면 밖 좌표 + 최소 크기 + 포커스 금지
     args.push('--window-position=-32000,-32000');
+    args.push('--window-size=1,1');
+    args.push('--noerrdialogs');
+    args.push('--no-sandbox');
   }
 
   const context = await chromium.launchPersistentContext(DEFAULT_PROFILE_DIR, {
@@ -123,6 +128,10 @@ async function getOrCreateContext(headless) {
   _context = context;
   const pages = context.pages();
   _page = pages.length > 0 ? pages[0] : await context.newPage();
+
+  if (headless && _page) {
+    _page.bringToFront = async () => {};
+  }
 
   context.on('close', () => { _context = null; _page = null; });
   _currentHeadlessMode = headless;
@@ -548,4 +557,5 @@ module.exports = {
   setExternalContext,
   closeAgent,
   getOrCreateContext,
+  isRunningHeadless,
 };

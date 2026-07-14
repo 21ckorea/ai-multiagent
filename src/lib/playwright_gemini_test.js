@@ -745,10 +745,20 @@ async function launchGeminiContext(profileDir, logger, isHeadless = false) {
   logger.info(`Profile directory: ${profileDir}`);
   logger.info('Applying stealth launch flags (AutomationControlled mitigation).');
 
+  const geminiArgs = [...CHROME_STEALTH_ARGS];
+  if (isHeadless) {
+    const idx = geminiArgs.indexOf('--start-maximized');
+    if (idx > -1) geminiArgs.splice(idx, 1);
+    geminiArgs.push('--window-position=-32000,-32000');
+    geminiArgs.push('--window-size=1,1');
+    geminiArgs.push('--noerrdialogs');
+    geminiArgs.push('--no-sandbox');
+  }
+
   const context = await chromium.launchPersistentContext(profileDir, {
     headless: isHeadless,
     channel: 'chrome',
-    args: CHROME_STEALTH_ARGS,
+    args: geminiArgs,
     ignoreDefaultArgs: PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
   });
 

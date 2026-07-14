@@ -209,10 +209,21 @@ async function run(options = {}) {
     const naverIdSuffix = args.naverId ? '-' + args.naverId : '';
     const userDataDir = path.resolve(process.cwd(), 'profiles/playwright-naver-profile' + naverIdSuffix);
     fs.mkdirSync(userDataDir, { recursive: true });
+
+    const publishArgs = [...CHROME_STEALTH_ARGS];
+    if (args.headless === true) {
+      const idx = publishArgs.indexOf('--start-maximized');
+      if (idx > -1) publishArgs.splice(idx, 1);
+      publishArgs.push('--window-position=-32000,-32000');
+      publishArgs.push('--window-size=1,1');
+      publishArgs.push('--noerrdialogs');
+      publishArgs.push('--no-sandbox');
+    }
+
     context = await chromium.launchPersistentContext(userDataDir, {
       headless: args.headless === true,
       channel: 'chrome',
-      args: CHROME_STEALTH_ARGS,
+      args: publishArgs,
       ignoreDefaultArgs: PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
     });
     await applyPlaywrightStealthInitScript(context);
