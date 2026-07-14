@@ -9,7 +9,6 @@
  * @seeAlso  playwright_naver_pipeline.js, naver_editor.js
  */
 
-
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
@@ -52,7 +51,6 @@ function parseArgs(argv = process.argv.slice(2)) {
       imagePath: 'image-path',
       h: 'help',
       withImages: 'with-images',
-      naverId: 'naver-id',
       naverId: 'naver-id',
     },
   });
@@ -157,7 +155,6 @@ async function run(options = {}) {
   const rawContent = readTextFile(contentPath);
 
   // JSON 형식(Gemini naver JSON prompt 응답)과 XML 형식(레거시) 모두 지원.
-  // HTML 태그가 포함되어 있을 수 있으므로 태그를 제거하고 디코딩하여 순수 JSON 텍스트 추출 시도.
   const cleanContentForJson = rawContent
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n')
@@ -228,6 +225,20 @@ async function run(options = {}) {
     if (isNaverLoginFailureUrl(startUrl)) {
       logNaverPublishMarker(logger, {
         ok: false,
+        reason: 'login_required',
+        url: startUrl,
+      });
+      logger.result(RESULT.FAILED, 'login_required');
+      return EXIT.FAILED;
+    }
+
+    if (!isNaverBlogWriteSuccessUrl(startUrl, blogId)) {
+      // editor URL이 아직 아니면 잠시 폴링
+      let ready = false;
+      const editorWaitMs = 20000;
+      const editorWaitStart = Date.now();
+      while (Date.now() - editorWaitStart < editorWaitMs) {
+        const url = page.url();
         if (isNaverLoginFailureUrl(url)) {
           logNaverPublishMarker(logger, { ok: false, reason: 'login_required', url });
           logger.result(RESULT.FAILED, 'login_required');
@@ -309,19 +320,18 @@ async function run(options = {}) {
       try {
         const { pasteImageIntoNaverPlaceholder } = require('./naver_image');
         const { resolveEditorFrame } = require('./naver_editor');
-        const fs = require('fs');
         const editorFrame = await resolveEditorFrame(page, logger);
-        
+
         let thumbImage = args.images.find(img => img.type === 'thumbnail') || args.images[0];
         let bodyImages = args.images.filter(img => img !== thumbImage);
-        
+
         if (thumbImage && thumbImage.localPath && fs.existsSync(thumbImage.localPath)) {
           logger.info(`[NAVER] 썸네일 이미지 삽입 시작`);
           const base64 = fs.readFileSync(thumbImage.localPath, 'base64');
           const dataUrl = 'data:image/png;base64,' + base64;
           await pasteImageIntoNaverPlaceholder(page, editorFrame, dataUrl, '썸네일 삽입 공간', logger);
         }
-        
+
         for (let i = 0; i < bodyImages.length; i++) {
           const bImg = bodyImages[i];
           if (bImg.localPath && fs.existsSync(bImg.localPath) && bImg.marker) {

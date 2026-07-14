@@ -90,11 +90,30 @@ async function execute(prompt, options) {
       });
     } else if (action === 'complete') {
       let rowNumber = params.rowNumber;
-      try {
-        const parsed = JSON.parse(rowNumber);
-        if (parsed && parsed.rowNumber) rowNumber = parsed.rowNumber;
-      } catch(e) {}
-      
+
+      // params에서 직접 못 찾으면 context 전체를 뒤져서 rowNumber 추출
+      if (!rowNumber && options?.context) {
+        for (const val of Object.values(options.context)) {
+          if (typeof val === 'string') {
+            try {
+              const parsed = JSON.parse(val);
+              if (parsed && parsed.rowNumber) {
+                rowNumber = parsed.rowNumber;
+                break;
+              }
+            } catch(e) {}
+          }
+        }
+      }
+
+      // JSON 문자열로 들어온 경우 파싱
+      if (typeof rowNumber === 'string') {
+        try {
+          const parsed = JSON.parse(rowNumber);
+          if (parsed && parsed.rowNumber) rowNumber = parsed.rowNumber;
+        } catch(e) {}
+      }
+
       rowNumber = parseInt(rowNumber, 10);
       if (!rowNumber) return '[ERROR] 완료 처리할 rowNumber가 제공되지 않았습니다.';
       

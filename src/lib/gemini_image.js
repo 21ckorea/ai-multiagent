@@ -49,12 +49,15 @@ const GEMINI_IMAGE_RELOAD_MAX = GEMINI_FLOW_RETRY_MAX;
 const _IMAGE_STYLE_FILE = path.join(__dirname, 'prompts', 'gemini-image-style.txt');
 const GEMINI_IMAGE_PROMPT_SUFFIX = (() => {
   if (!fs.existsSync(_IMAGE_STYLE_FILE)) {
-    throw new Error(`[GeminiImage] 필수 프롬프트 파일이 없습니다: ${_IMAGE_STYLE_FILE}`);
+    // ASAR 패키지 환경에서 파일이 없을 수 있으므로 기본값 사용
+    console.warn(`[GeminiImage] 프롬프트 파일 없음, 기본 스타일 사용: ${_IMAGE_STYLE_FILE}`);
+    return ', 3D 파스텔 일러스트 스타일, 부드럽고 밝은 색감, 귀여운 캐릭터, 미니멀한 배경, 고품질 렌더링';
   }
   const raw = fs.readFileSync(_IMAGE_STYLE_FILE, 'utf8');
   const body = raw.replace(/^={10,}[\s\S]*?={10,}\r?\n?/, '').trim();
   if (!body) {
-    throw new Error(`[GeminiImage] 프롬프트 파일이 비어있습니다: ${_IMAGE_STYLE_FILE}`);
+    console.warn(`[GeminiImage] 프롬프트 파일이 비어있음, 기본 스타일 사용: ${_IMAGE_STYLE_FILE}`);
+    return ', 3D 파스텔 일러스트 스타일, 부드럽고 밝은 색감, 귀여운 캐릭터, 미니멀한 배경, 고품질 렌더링';
   }
   return body;
 })();
