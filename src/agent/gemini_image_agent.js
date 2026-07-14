@@ -90,7 +90,7 @@ async function execute(prompt, options) {
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
     
     const geminiAgent = require('./gemini_agent');
-    const { context, page } = await geminiAgent.getOrCreateContext();
+    const { context, page } = await geminiAgent.getOrCreateContext(options.headless !== false);
 
     const mockLogger = {
       info: (m) => options?.log?.(m),

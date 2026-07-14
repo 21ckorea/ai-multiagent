@@ -70,7 +70,7 @@ async function launchBrowser(profileDir = DEFAULT_PROFILE_DIR) {
   fs.mkdirSync(profileDir, { recursive: true });
 
   const context = await chromium.launchPersistentContext(profileDir, {
-    headless: process.env.HEADLESS === 'true',
+    headless: false, // 로그인을 위해 무조건 창을 띄움
     channel: 'chrome',
     args: [
       '--no-first-run',

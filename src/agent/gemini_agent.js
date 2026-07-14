@@ -71,9 +71,16 @@ function sleep(ms) {
 }
 
 // ── 브라우저 컨텍스트 획득/재사용 ────────────────────────────────────────────
-async function getOrCreateContext() {
+let _currentHeadlessMode = null;
+
+async function getOrCreateContext(headless) {
   if (_context && _page) {
-    // 페이지가 살아있는지 확인
+    if (_currentHeadlessMode !== headless) {
+      await _context.close().catch(() => {});
+      _context = null;
+      _page = null;
+    } else {
+      // 페이지가 살아있는지 확인
     try {
       await _page.title();
       return { context: _context, page: _page };
@@ -96,7 +103,7 @@ async function getOrCreateContext() {
   } catch { /* 실행 중인 프로세스가 없거나 실패 시 무시 */ }
 
   const context = await chromium.launchPersistentContext(DEFAULT_PROFILE_DIR, {
-    headless: process.env.HEADLESS === 'true',
+    headless: headless,
     channel: 'chrome',
     args: [
       '--no-first-run',
@@ -112,6 +119,7 @@ async function getOrCreateContext() {
   _page = pages.length > 0 ? pages[0] : await context.newPage();
 
   context.on('close', () => { _context = null; _page = null; });
+  _currentHeadlessMode = headless;
   return { context: _context, page: _page };
 }
 
@@ -488,9 +496,9 @@ async function extractResponseText(page, log) {
 
 // ── 메인 공개 함수: Gemini에 질문하고 응답 반환 ──────────────────────────────
 async function askGemini(promptText, options = {}) {
-  const { newChat = true, log } = options;
+  const { newChat = true, headless = true, log } = options;
 
-  const { page } = await getOrCreateContext();
+  const { page } = await getOrCreateContext(headless);
 
   // 새 채팅: /app URL로 이동
   if (newChat) {

@@ -252,6 +252,11 @@ function selectStep(id) {
   document.getElementById('step-prompt').value  = step.prompt || '';
   document.getElementById('step-timeout').value = (step.timeout || 120000) / 1000;
   document.getElementById('step-new-chat').checked = step.newChat !== false;
+  
+  const runModeSelect = document.getElementById('step-headless');
+  if (runModeSelect) {
+    runModeSelect.value = step.headless !== false ? 'true' : 'false';
+  }
 
   const loop = step.loop || {};
   document.getElementById('loop-enabled').checked = !!loop.enabled;
@@ -356,6 +361,7 @@ async function saveStep() {
     prompt: document.getElementById('step-prompt').value,
     timeout: parseInt(document.getElementById('step-timeout').value, 10) * 1000,
     newChat: document.getElementById('step-new-chat').checked,
+    headless: document.getElementById('step-headless') ? document.getElementById('step-headless').value === 'true' : true,
     loop: {
       enabled: loopEnabled,
       condition: document.getElementById('loop-condition').value,

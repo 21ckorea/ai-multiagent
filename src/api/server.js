@@ -308,6 +308,7 @@ async function runWorkflow(workflow, initialInput) {
         if (!step.type || step.type === 'gemini') {
           output = await geminiAgent.askGemini(resolvedPrompt, {
             newChat: step.newChat !== false,
+            headless: step.headless !== false,
             log: (msg) => sendSSE({ type: 'step_log', stepId: step.id, message: msg }),
             context
           });
@@ -321,6 +322,7 @@ async function runWorkflow(workflow, initialInput) {
         } else if (step.type === 'plugin_gemini_image') {
           const geminiImageAgent = require('../agent/gemini_image_agent');
           output = await geminiImageAgent.execute(step.prompt, {
+            headless: step.headless !== false,
             log: (msg) => sendSSE({ type: 'step_log', stepId: step.id, message: msg }),
             context,
             rawPrompt: step.prompt
