@@ -214,43 +214,41 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       `[NAVER][IMG] marker box top(${Math.round(cx)},${Math.round(cy)}) h=${Math.round(box.height)} imgBefore=${imgBefore}`,
     );
 
-    // ── JS Range 선택 (macOS/Windows 모두 안정적으로 동작) ─────────────────
-    // CDP triple-click은 Windows의 iframe 내 selection이 window.getSelection()에
-    // 반영되지 않아 selLen=0 → Delete가 마커가 아닌 다음 줄을 삭제하는 문제 발생.
-    // editorFrame.evaluate()로 직접 Range를 만들어 마커 노드를 선택한 뒤 Delete.
+    // ── Step 1: 클릭으로 iframe 포커스 확보 ─────────────────────────────────
+    // naverPage.mouse.click → iframe이 포커스되어 이후 keyboard 이벤트가 iframe으로 전달됨
+    await naverPage.mouse.click(cx, cy);
+    await sleep(200);
+
+    // ── Step 2: JS Range API로 마커 P 전체 선택 (macOS/Windows 공통) ─────────
+    // CDP triple-click은 Windows에서 iframe selection이 window.getSelection()에
+    // 반영되지 않아 selLen=0 → Backspace가 마커가 아닌 엉뚱한 줄을 삭제함.
     const selLen = await editorFrame.evaluate((targetText) => {
       try {
         const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
         const w = norm(targetText);
-        // 마커 P 요소 탐색
         let targetP = null;
         for (const p of document.querySelectorAll('p.se-text-paragraph')) {
           if (p.closest('.se-documentTitle') || p.closest('.se-section-quotation')) continue;
-          if (norm(p.textContent) === w || norm(p.textContent).indexOf('이미지 삽입공간') === 0 || norm(p.textContent).indexOf('썸네일 삽입 공간') === 0) {
+          if (norm(p.textContent) === w
+            || norm(p.textContent).startsWith('이미지 삽입공간')
+            || norm(p.textContent).startsWith('썸네일 삽입 공간')) {
             targetP = p;
             break;
           }
         }
         if (!targetP) return 0;
-        // Range로 P 전체 선택
         const range = document.createRange();
         range.selectNodeContents(targetP);
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
-        // 선택 확인
         return (sel.toString() || '').replace(/\s+/g, ' ').trim().length;
-      } catch (e) {
-        return 0;
-      }
+      } catch (e) { return 0; }
     }, matchedText);
     logger?.info?.(`[NAVER][IMG] JS range select selLen=${selLen}`);
 
-    // 포커스 확보를 위해 한 번 클릭 후 대기
+    // ── Step 3: 선택 실패 시 fallback (Home + Shift+End) ────────────────────
     if (selLen === 0) {
-      // 선택 실패 시 클릭으로 캐럿 이동 후 Home+Shift+End 로 줄 선택
-      await naverPage.mouse.click(cx, cy);
-      await sleep(150);
       await naverPage.keyboard.press('Home');
       await sleep(50);
       await naverPage.keyboard.down('Shift');
@@ -259,15 +257,16 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       await sleep(100);
     }
 
-    // 선택된 마커 텍스트 삭제 (선택 → Backspace 한 번으로 충분)
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', windowsVirtualKeyCode: 8, code: 'Backspace', key: 'Backspace' });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 8, code: 'Backspace', key: 'Backspace' });
+    // ── Step 4: 마커 텍스트 삭제 ────────────────────────────────────────────
+    // CDP dispatchKeyEvent는 메인 페이지로만 가서 iframe에 포커스가 없으면 무시됨.
+    // naverPage.keyboard는 현재 포커스된 요소(iframe)로 라우팅되어 정상 동작함.
+    await naverPage.keyboard.press('Backspace');
     await sleep(120);
 
-    // Paste — SmartEditor intercepts the image paste, uploads, inserts a component.
+    // ── Step 5: 이미지 붙여넣기 ──────────────────────────────────────────────
     const pasteKey = isMac ? 'Meta+V' : 'Control+V';
     await naverPage.keyboard.press(pasteKey);
-    logger?.info?.(`[NAVER][IMG] Delete + ${pasteKey} sent — waiting for image insert...`);
+    logger?.info?.(`[NAVER][IMG] Deleted marker + ${pasteKey} sent — waiting for image insert...`);
 
     // Probe = the distinctive description part of the marker. If ANY paragraph
     // still contains it (even split like "미지 삽입공간 : ..."), it's not gone.
