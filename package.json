@@ -41,6 +41,13 @@
     "win": {
       "icon": "build/icon.png",
       "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "AI Multiagent"
     }
   },
   "dependencies": {
