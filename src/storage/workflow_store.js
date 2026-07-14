@@ -136,6 +136,54 @@ function deleteStep(id) {
   return true;
 }
 
+// ─── Export & Import ──────────────────────────────────────────
+
+function exportData() {
+  ensureFiles();
+  return {
+    workflows: getAllWorkflows(),
+    steps: getAllSteps(),
+    version: '1.0'
+  };
+}
+
+function importData(data) {
+  ensureFiles();
+  
+  if (!data || typeof data !== 'object') {
+    throw new Error('유효하지 않은 데이터 형식입니다.');
+  }
+
+  // 병합 (Merge) 모드: ID를 기준으로 기존 데이터를 덮어쓰거나 새로 추가함
+  if (Array.isArray(data.steps)) {
+    const existingSteps = getAllSteps();
+    const stepMap = new Map(existingSteps.map(s => [s.id, s]));
+    
+    data.steps.forEach(newStep => {
+      if (newStep.id) {
+        stepMap.set(newStep.id, { ...stepMap.get(newStep.id), ...newStep });
+      }
+    });
+    
+    writeJson(STEPS_FILE, Array.from(stepMap.values()));
+  }
+
+  if (Array.isArray(data.workflows)) {
+    const existingWorkflows = getAllWorkflows();
+    const wfMap = new Map(existingWorkflows.map(w => [w.id, w]));
+    
+    data.workflows.forEach(newWf => {
+      if (newWf.id) {
+        wfMap.set(newWf.id, { ...wfMap.get(newWf.id), ...newWf });
+      }
+    });
+    
+    writeJson(WORKFLOWS_FILE, Array.from(wfMap.values()));
+  }
+
+  return { success: true };
+}
+
 module.exports = {
   getAllWorkflows,
   getWorkflow,
@@ -147,4 +195,6 @@ module.exports = {
   createStep,
   updateStep,
   deleteStep,
+  exportData,
+  importData,
 };

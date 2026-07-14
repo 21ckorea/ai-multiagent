@@ -918,6 +918,62 @@ function showToast(msg) {
   toastTimeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
 }
 
+// ─── 데이터 백업/복구 (Export & Import) ──────────────────────
+
+async function exportData() {
+  try {
+    const res = await fetch('/api/export');
+    if (!res.ok) throw new Error('내보내기 실패');
+    const data = await res.json();
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai_multiagent_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('데이터 내보내기가 완료되었습니다.');
+  } catch (err) {
+    showToast(`내보내기 오류: ${err.message}`);
+  }
+}
+
+async function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    const res = await fetch('/api/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || '가져오기 실패');
+    }
+
+    showToast('데이터 가져오기(병합)가 완료되었습니다.');
+    
+    // 데이터 새로고침
+    if (State.activeTab === 'prompts') loadSteps();
+    else if (State.activeTab === 'workflow') { loadSteps(); loadWorkflows(); }
+    else if (State.activeTab === 'runner') loadWorkflowsForRunner();
+    
+  } catch (err) {
+    showToast(`가져오기 오류: ${err.message}`);
+  } finally {
+    event.target.value = ''; // input 초기화
+  }
+}
+
 // ─── 초기화 ─────────────────────────────────────────────────
 async function init() {
   connectSSE();

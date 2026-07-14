@@ -165,6 +165,26 @@ app.delete('/api/steps/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── 내보내기 & 가져오기 API ──────────────────────────────────────
+
+app.get('/api/export', (req, res) => {
+  try {
+    const data = store.exportData();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/import', express.json({ limit: '50mb' }), (req, res) => {
+  try {
+    const result = store.importData(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ─── 실행 API ────────────────────────────────────────────────────
 
 /** SSE 이벤트 스트림 */

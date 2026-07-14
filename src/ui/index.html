@@ -39,6 +39,15 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="data-actions">
+        <button class="action-btn outline" onclick="exportData()" title="데이터 내보내기 (백업)">
+          <span>📥 내보내기</span>
+        </button>
+        <button class="action-btn outline" onclick="document.getElementById('import-file').click()" title="데이터 가져오기 (복원/병합)">
+          <span>📤 가져오기</span>
+        </button>
+        <input type="file" id="import-file" accept=".json" style="display: none" onchange="importData(event)">
+      </div>
       <div class="server-status" id="server-status">
         <span class="status-dot connected"></span>
         <span class="status-text">서버 연결됨</span>
