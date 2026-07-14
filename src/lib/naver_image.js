@@ -98,10 +98,15 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       (p) => !p.closest('.se-documentTitle') && !p.closest('.se-section-quotation'),
     );
     for (const p of paras) {
-      if (n(p.textContent) === w) return p;
+      if (n(p.textContent) === w) {
+        // Return the deepest span containing the text to avoid clicking block padding
+        return p.querySelector('span.__se-node') || p;
+      }
     }
     for (const p of paras) {
-      if (n(p.textContent).indexOf('이미지 삽입공간') === 0) return p;
+      if (n(p.textContent).indexOf('이미지 삽입공간') === 0) {
+        return p.querySelector('span.__se-node') || p;
+      }
     }
     return null;
   }, marker);
@@ -209,28 +214,55 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
       `[NAVER][IMG] marker box top(${Math.round(cx)},${Math.round(cy)}) h=${Math.round(box.height)} imgBefore=${imgBefore}`,
     );
 
-    // Triple-click — SmartEditor HONORS this to select the whole paragraph (a
-    // programmatic Range is NOT synced to its model → partial delete + split).
-    // Click the first line (top-left); the center of a tall marker can miss.
-    for (let c = 1; c <= 3; c += 1) {
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: cx, y: cy, button: 'left', clickCount: c, buttons: 1 });
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx, y: cy, button: 'left', clickCount: c, buttons: 0 });
-      await sleep(70);
-    }
-    await sleep(180);
-    const selLen = await editorFrame
-      .evaluate(() => (window.getSelection()?.toString() || '').replace(/\s+/g, ' ').trim().length)
-      .catch(() => 0);
-    logger?.info?.(`[NAVER][IMG] triple-click selLen=${selLen}`);
+    // ── JS Range 선택 (macOS/Windows 모두 안정적으로 동작) ─────────────────
+    // CDP triple-click은 Windows의 iframe 내 selection이 window.getSelection()에
+    // 반영되지 않아 selLen=0 → Delete가 마커가 아닌 다음 줄을 삭제하는 문제 발생.
+    // editorFrame.evaluate()로 직접 Range를 만들어 마커 노드를 선택한 뒤 Delete.
+    const selLen = await editorFrame.evaluate((targetText) => {
+      try {
+        const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
+        const w = norm(targetText);
+        // 마커 P 요소 탐색
+        let targetP = null;
+        for (const p of document.querySelectorAll('p.se-text-paragraph')) {
+          if (p.closest('.se-documentTitle') || p.closest('.se-section-quotation')) continue;
+          if (norm(p.textContent) === w || norm(p.textContent).indexOf('이미지 삽입공간') === 0 || norm(p.textContent).indexOf('썸네일 삽입 공간') === 0) {
+            targetP = p;
+            break;
+          }
+        }
+        if (!targetP) return 0;
+        // Range로 P 전체 선택
+        const range = document.createRange();
+        range.selectNodeContents(targetP);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        // 선택 확인
+        return (sel.toString() || '').replace(/\s+/g, ' ').trim().length;
+      } catch (e) {
+        return 0;
+      }
+    }, matchedText);
+    logger?.info?.(`[NAVER][IMG] JS range select selLen=${selLen}`);
 
-    // Delete the selected marker text → empty line with the caret.
-    // Backspace (8) is highly compatible on macOS/Windows selection deletion.
+    // 포커스 확보를 위해 한 번 클릭 후 대기
+    if (selLen === 0) {
+      // 선택 실패 시 클릭으로 캐럿 이동 후 Home+Shift+End 로 줄 선택
+      await naverPage.mouse.click(cx, cy);
+      await sleep(150);
+      await naverPage.keyboard.press('Home');
+      await sleep(50);
+      await naverPage.keyboard.down('Shift');
+      await naverPage.keyboard.press('End');
+      await naverPage.keyboard.up('Shift');
+      await sleep(100);
+    }
+
+    // 선택된 마커 텍스트 삭제 (선택 → Backspace 한 번으로 충분)
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', windowsVirtualKeyCode: 8, code: 'Backspace', key: 'Backspace' });
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 8, code: 'Backspace', key: 'Backspace' });
-    await sleep(80);
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', windowsVirtualKeyCode: 46, code: 'Delete', key: 'Delete' });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 46, code: 'Delete', key: 'Delete' });
-    await sleep(180);
+    await sleep(120);
 
     // Paste — SmartEditor intercepts the image paste, uploads, inserts a component.
     const pasteKey = isMac ? 'Meta+V' : 'Control+V';
