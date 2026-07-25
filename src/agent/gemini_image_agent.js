@@ -73,10 +73,27 @@ async function execute(prompt, options) {
         }
       }
     }
-  } else if (parsedText && style) {
-    prompts.push({ type: 'single', text: `주제: ${parsedText}\n스타일: ${style}` });
   } else {
-    prompts.push({ type: 'single', text: parsedText || style || '' });
+    // JSON 파싱에 실패했더라도 원문 HTML이 전달되었을 경우를 대비해 플레이스홀더를 직접 추출합니다.
+    const { extractImagePlaceholders } = require('../lib/gemini_validate');
+    const { extractFirstH1PlainTextFromHtml } = require('../lib/tistory_publish_harvest');
+    const placeholders = extractImagePlaceholders(cleanText);
+    
+    if (placeholders && placeholders.length > 0) {
+      const h1 = extractFirstH1PlainTextFromHtml(cleanText);
+      prompts.push({ type: 'thumbnail', text: `주제: ${h1 || '블로그 대표 이미지'}\n스타일: ${style}` });
+      for (const ph of placeholders) {
+        prompts.push({
+          type: 'imgplace',
+          text: `주제: ${ph.prompt}\n스타일: ${style}`,
+          marker: ph.fullPlaceholderLine || ph.prompt
+        });
+      }
+    } else if (parsedText && style) {
+      prompts.push({ type: 'single', text: `주제: ${parsedText}\n스타일: ${style}` });
+    } else {
+      prompts.push({ type: 'single', text: parsedText || style || '' });
+    }
   }
 
   if (prompts.length === 0 || !prompts[0].text) {
