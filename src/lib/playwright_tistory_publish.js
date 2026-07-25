@@ -280,9 +280,7 @@ async function run(options = {}) {
             if (imageResult.ok && imageResult.dataUrl) {
               if (ph.isVirtualCover) {
                 coverDataUrl = imageResult.dataUrl;
-                logger.info(`[TISTORY] 대표 이미지(썸네일) 생성 완료!`);
-                // 썸네일 삽입 공간 마커 제거 및 삽입
-                await pasteImageAtPlaceholder(page, imageResult.dataUrl, '썸네일 삽입 공간', logger);
+                logger.info(`[TISTORY] 대표 이미지(썸네일) 생성 완료! (커버 이미지로만 사용)`);
               } else {
                 logger.info(`[TISTORY] 본문 이미지 생성 완료!`);
                 await pasteImageAtPlaceholder(page, imageResult.dataUrl, ph.fullPlaceholderLine, logger, {
@@ -310,11 +308,10 @@ async function run(options = {}) {
       let bodyImages = args.images.filter(img => img !== thumbImage);
 
       if (thumbImage && thumbImage.localPath && fs.existsSync(thumbImage.localPath)) {
-        logger.info(`[TISTORY] 대표 이미지(썸네일) 삽입 시작...`);
+        logger.info(`[TISTORY] 대표 이미지(썸네일) 설정 완료 (커버 이미지로만 사용)...`);
         const base64 = fs.readFileSync(thumbImage.localPath, 'base64');
         const dataUrl = 'data:image/png;base64,' + base64;
         coverDataUrl = dataUrl;
-        await pasteImageAtPlaceholder(page, dataUrl, '썸네일 삽입 공간', logger);
       }
 
       for (let i = 0; i < bodyImages.length; i++) {
