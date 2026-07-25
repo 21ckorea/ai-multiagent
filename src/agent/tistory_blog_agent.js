@@ -131,7 +131,7 @@ async function execute(prompt, options) {
   if (title.startsWith('Gemini의 응답')) {
     title = title.replace(/^Gemini의 응답\s*(HTML)?\s*/i, '').trim();
   }
-  title = title.replace(/^\[?\d+\]?[\s\.\,\-\_]+\s*/, '').trim();
+  title = title.replace(/^\[?\d{1,2}\]?[\s\.\,\-\_]+\s*/, '').trim();
   postData.title = title;
 
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
