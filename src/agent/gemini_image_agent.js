@@ -160,6 +160,13 @@ async function execute(prompt, options) {
     }
   } catch (err) {
     return `[ERROR] 이미지 생성 실패: ${err.message}`;
+  } finally {
+    try {
+      const geminiAgent = require('./gemini_agent');
+      await geminiAgent.closeAgent();
+    } catch (e) {
+      /* ignore */
+    }
   }
 }
 
