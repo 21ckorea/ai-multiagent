@@ -95,7 +95,11 @@ async function execute(prompt, options) {
       if (parsedObj.tags) postData.tags = parsedObj.tags;
     }
   } catch(e) {}
-
+  
+  // 최종 타이틀 클리닝 (앞부분의 숫자. 공백 패턴 제거)
+  title = title.replace(/^\[?\d+\]?[\s\.\,\-\_]+\s*/, '').trim();
+  postData.title = title;
+  
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
 
   try {
