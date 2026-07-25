@@ -96,8 +96,8 @@ async function execute(prompt, options) {
     }
   } catch(e) {}
   
-  // 최종 타이틀 클리닝 (앞부분의 숫자. 공백 패턴 제거)
-  title = title.replace(/^\[?\d{1,2}\]?[\s\.\,\-\_]+\s*/, '').trim();
+  // 최종 타이틀 클리닝 (앞부분의 숫자. 공백 패턴 제거, 단 3.5처럼 소수점은 제외)
+  title = title.replace(/^\[?\d{1,2}\]?(?![\.\,]\d)[\s\.\,\-\_]+\s*/, '').trim();
   postData.title = title;
   
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
