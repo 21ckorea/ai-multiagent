@@ -95,7 +95,7 @@ async function run(options = {}) {
   let body = postData.body || '';
 
   // JSON에 blocks 형태로 글이 작성되어 있다면 HTML로 조립
-  if (postData.blocks && Array.isArray(postData.blocks)) {
+  if (postData.blocks && Array.isArray(postData.blocks) && postData.blocks.length > 0) {
     let htmlContent = '';
     for (const block of postData.blocks) {
       if (block.type === 'heading') {
