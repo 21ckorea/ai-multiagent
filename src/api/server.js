@@ -26,6 +26,39 @@ const sessionManager = require('../agent/session_manager');
 const geminiAgent    = require('../agent/gemini_agent');
 const store          = require('../storage/workflow_store');
 
+const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
+
+function loadSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
+  return {
+    blogUrl: 'https://today-ittrend.tistory.com',
+    kakaoId: 'seoingyo@naver.com',
+    kakaoPassword: '',
+    blogId: 'trend_signal',
+    naverId: 'seoingyo'
+  };
+}
+
+function saveSettings(settings) {
+  try {
+    const dataDir = path.dirname(SETTINGS_FILE);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Failed to save settings:', err);
+    return false;
+  }
+}
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -109,6 +142,17 @@ app.post('/api/session/clear', async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// ─── 접속 정보 설정 API ──────────────────────────────────────────
+
+app.get('/api/settings', (req, res) => {
+  res.json({ ok: true, settings: loadSettings() });
+});
+
+app.post('/api/settings', (req, res) => {
+  const result = saveSettings(req.body);
+  res.json({ ok: result });
 });
 
 // ─── 워크플로우 CRUD ─────────────────────────────────────────────
@@ -243,11 +287,13 @@ async function runWorkflow(workflow, initialInput) {
     .map((id) => store.getStep(id))
     .filter(Boolean);
 
+  const settings = loadSettings();
   // 파이프라인 컨텍스트 (변수 치환용)
   const context = {
     workflow_input: initialInput,
     prev_output:   initialInput,
     today:         new Date().toISOString().slice(0, 10),
+    ...settings
   };
 
   sendSSE({

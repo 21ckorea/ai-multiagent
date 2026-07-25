@@ -33,6 +33,7 @@ function switchTab(tabId) {
 
   const titles = {
     session:  ['Gemini 연결', 'Google 계정 연결 및 세션 관리'],
+    settings: ['접속 정보 설정', '워크플로우 변수로 사용될 블로그 접속 정보 및 커스텀 환경 변수 설정'],
     prompts:  ['프롬프트 관리', '단계별 AI 프롬프트를 작성하고 관리하세요'],
     workflow: ['워크플로우', '스텝을 연결해 자동화 파이프라인을 구성하세요'],
     runner:   ['실행 & 모니터링', '워크플로우를 실행하고 진행 상황을 모니터링하세요'],
@@ -46,6 +47,7 @@ document.querySelectorAll('.nav-item').forEach((btn) => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab;
     switchTab(tab);
+    if (tab === 'settings') loadSettingsForm();
     if (tab === 'prompts') loadSteps();
     if (tab === 'workflow') { loadSteps(); loadWorkflows(); }
     if (tab === 'runner') { loadWorkflowsForRunner(); }
@@ -1016,6 +1018,151 @@ function switchRunnerTab(tab) {
     copyResultBtn.style.display = 'inline-flex';
   }
 }
+
+// ─── 접속 정보 설정 UI 처리 ────────────────────────────────────────
+async function loadSettingsForm() {
+  const container = document.getElementById('settings-vars-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const msgEl = document.getElementById('settings-message');
+  if (msgEl) {
+    msgEl.textContent = '';
+    msgEl.className = 'status-message';
+  }
+
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (data.ok && data.settings) {
+      const entries = Object.entries(data.settings);
+      if (entries.length === 0) {
+        // 기본 템플릿 로드
+        addSettingRow('blogUrl', 'https://today-ittrend.tistory.com', false);
+        addSettingRow('kakaoId', 'seoingyo@naver.com', false);
+        addSettingRow('kakaoPassword', '', true);
+        addSettingRow('blogId', 'trend_signal', false);
+        addSettingRow('naverId', 'seoingyo', false);
+      } else {
+        for (const [k, v] of entries) {
+          const isPass = k.toLowerCase().includes('password') || k.toLowerCase().includes('pw') || k.toLowerCase().includes('secret');
+          addSettingRow(k, v, isPass);
+        }
+      }
+    }
+  } catch (err) {
+    showToast('설정을 불러오는데 실패했습니다.');
+  }
+}
+
+function addSettingRow(key = '', value = '', isPassword = false) {
+  const container = document.getElementById('settings-vars-list');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.className = 'settings-var-row';
+
+  // Key column
+  const keyCol = document.createElement('div');
+  keyCol.className = 'var-col key-col';
+  const keyInput = document.createElement('input');
+  keyInput.type = 'text';
+  keyInput.className = 'var-input key-input';
+  keyInput.placeholder = '변수명 (예: blogUrl)';
+  keyInput.value = key;
+  keyCol.appendChild(keyInput);
+
+  // Value column
+  const valCol = document.createElement('div');
+  valCol.className = 'var-col val-col';
+  const valInput = document.createElement('input');
+  valInput.type = isPassword ? 'password' : 'text';
+  valInput.className = 'var-input val-input';
+  valInput.placeholder = '변수 값';
+  valInput.value = value;
+  valCol.appendChild(valInput);
+
+  // Password checkbox column
+  const pwCol = document.createElement('div');
+  pwCol.className = 'var-col action-col';
+  const pwCheckbox = document.createElement('input');
+  pwCheckbox.type = 'checkbox';
+  pwCheckbox.checked = isPassword;
+  pwCheckbox.addEventListener('change', () => {
+    valInput.type = pwCheckbox.checked ? 'password' : 'text';
+  });
+  pwCol.appendChild(pwCheckbox);
+
+  // Delete button column
+  const delCol = document.createElement('div');
+  delCol.className = 'var-col delete-col';
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-sm btn-danger-outline';
+  delBtn.textContent = '삭제';
+  delBtn.onclick = () => row.remove();
+  delCol.appendChild(delBtn);
+
+  row.appendChild(keyCol);
+  row.appendChild(valCol);
+  row.appendChild(pwCol);
+  row.appendChild(delCol);
+
+  container.appendChild(row);
+}
+
+// 템플릿 호출용 전역 별칭 매핑
+window.addSettingRow = addSettingRow;
+
+async function saveSettingsForm() {
+  const container = document.getElementById('settings-vars-list');
+  if (!container) return;
+
+  const rows = container.querySelectorAll('.settings-var-row');
+  const settings = {};
+
+  rows.forEach((row) => {
+    const key = row.querySelector('.key-input').value.trim();
+    const value = row.querySelector('.val-input').value.trim();
+    if (key) {
+      settings[key] = value;
+    }
+  });
+
+  const msgEl = document.getElementById('settings-message');
+  if (msgEl) {
+    msgEl.textContent = '저장 중...';
+    msgEl.className = 'status-message info';
+  }
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      if (msgEl) {
+        msgEl.textContent = '✓ 설정이 정상적으로 저장되었습니다.';
+        msgEl.className = 'status-message success';
+      }
+      showToast('설정 저장 완료!');
+    } else {
+      if (msgEl) {
+        msgEl.textContent = '❌ 저장 실패';
+        msgEl.className = 'status-message error';
+      }
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.textContent = `❌ 오류 발생: ${err.message}`;
+      msgEl.className = 'status-message error';
+    }
+  }
+}
+
+// 전역 별칭 매핑
+window.saveSettingsForm = saveSettingsForm;
 
 // ─── 초기화 ─────────────────────────────────────────────────
 async function init() {

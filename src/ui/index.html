@@ -28,6 +28,10 @@
         <span class="nav-icon">📝</span>
         <span class="nav-label">프롬프트 관리</span>
       </button>
+      <button class="nav-item" data-tab="settings" id="nav-settings">
+        <span class="nav-icon">🔑</span>
+        <span class="nav-label">접속 정보 설정</span>
+      </button>
       <button class="nav-item" data-tab="workflow" id="nav-workflow">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">워크플로우</span>
@@ -187,6 +191,49 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════
+         탭 5: 접속 정보 설정 (Settings)
+    ══════════════════════════════════════════════════ -->
+    <section class="tab-content" id="tab-settings">
+      <div class="card settings-card">
+        <div class="card-header">
+          <div class="card-title-row">
+            <span class="card-icon">🔑</span>
+            <h2 class="card-title">접속 정보 & 환경 변수 설정</h2>
+          </div>
+        </div>
+
+        <p class="card-desc">
+          워크플로우 실행 시 본문(프롬프트) 내의 <code>{{변수명}}</code> 패턴을 실제 값으로 자동 치환해 주는 환경 변수 관리 페이지입니다.
+          비밀번호 등 민감 정보를 안전하게 따로 관리할 수 있습니다.
+        </p>
+
+        <!-- 동적 변수 리스트 -->
+        <div class="settings-vars-container">
+          <div class="settings-vars-header">
+            <div class="var-col key-col">변수명 (Key)</div>
+            <div class="var-col val-col">변수 값 (Value)</div>
+            <div class="var-col action-col">비밀번호 여부</div>
+            <div class="var-col delete-col">작업</div>
+          </div>
+          <div class="settings-vars-list" id="settings-vars-list">
+            <!-- 동적으로 생성되는 입력 행 -->
+          </div>
+        </div>
+
+        <div class="settings-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+          <button class="btn btn-outline" onclick="addSettingRow('', '', false)">
+            <span>➕ 변수 추가</span>
+          </button>
+          <button class="btn btn-primary" onclick="saveSettingsForm()">
+            <span>💾 설정 저장</span>
+          </button>
+        </div>
+
+        <div class="status-message" id="settings-message"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
          탭 2: 프롬프트 관리
     ══════════════════════════════════════════════════ -->
     <section class="tab-content" id="tab-prompts">
@@ -222,6 +269,7 @@
                 <option value="plugin_google_sheet">구글 시트 연동 (읽기/쓰기)</option>
                 <option value="plugin_gemini_image">Gemini 이미지 생성</option>
                 <option value="plugin_naver_publish">네이버 블로그 자동 포스팅</option>
+                <option value="plugin_tistory_publish">티스토리 블로그 자동 포스팅</option>
               </select>
             </div>
 

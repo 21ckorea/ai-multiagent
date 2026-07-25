@@ -1472,3 +1472,84 @@ body {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* ─── 접속 정보 설정 스타일 ────────────────────────────────────── */
+.settings-vars-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: 20px;
+  background: var(--bg-card);
+}
+
+.settings-vars-header {
+  display: flex;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-vars-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.settings-var-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.settings-var-row:last-child {
+  border-bottom: none;
+}
+
+.var-col {
+  display: flex;
+  align-items: center;
+}
+
+.key-col {
+  flex: 1;
+}
+
+.val-col {
+  flex: 2;
+}
+
+.action-col {
+  width: 100px;
+  justify-content: center;
+}
+
+.delete-col {
+  width: 60px;
+  justify-content: center;
+}
+
+.var-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color var(--transition);
+}
+
+.var-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
