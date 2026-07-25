@@ -313,6 +313,7 @@ async function run(options = {}) {
         logger.info(`[TISTORY] 대표 이미지(썸네일) 삽입 시작...`);
         const base64 = fs.readFileSync(thumbImage.localPath, 'base64');
         const dataUrl = 'data:image/png;base64,' + base64;
+        coverDataUrl = dataUrl;
         await pasteImageAtPlaceholder(page, dataUrl, '썸네일 삽입 공간', logger);
       }
 
@@ -337,6 +338,7 @@ async function run(options = {}) {
       finalHtml,
       {
         isPublic: args.visibility === '2',
+        visibility: args.visibility,
         blogUrl: args.blogUrl,
         categoryItemElementId: args.category || '',
         coverDataUrl,

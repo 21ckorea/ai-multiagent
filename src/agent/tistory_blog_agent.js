@@ -40,22 +40,47 @@ async function execute(prompt, options) {
   }
 
   let title = params.title || '새 블로그 포스트';
-  try {
-    const parsedTitle = JSON.parse(title);
-    if (parsedTitle && parsedTitle.title) {
-      title = parsedTitle.title;
-    }
-  } catch (e) {
-    // 일반 텍스트면 그냥 사용
-  }
-
-  const content = params.content || ''; // HTML or markdown
+  let content = params.content || ''; // HTML or markdown
   const images = params.images || []; // Array of local paths
   const tags = params.tags || []; // Array of tags
 
   if (!content) {
     return '[ERROR] 작성할 본문(content)이 없습니다.';
   }
+
+  // 본문 클리닝 함수 (Gemini의 응답, HTML, ```html 등의 마크다운/대화형 프리픽스 제거)
+  function sanitizeHtmlContent(html) {
+    if (!html) return '';
+    let cleaned = html.trim();
+    const lines = cleaned.split('\n');
+    const filteredLines = [];
+    let htmlStarted = false;
+    
+    for (let line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('<')) {
+        htmlStarted = true;
+      }
+      if (htmlStarted) {
+        if (trimmedLine.startsWith('```')) {
+          continue;
+        }
+        filteredLines.push(line);
+      } else {
+        if (
+          trimmedLine.includes('Gemini의 응답') || 
+          trimmedLine.toUpperCase() === 'HTML' || 
+          trimmedLine.startsWith('```')
+        ) {
+          continue;
+        }
+        filteredLines.push(line);
+      }
+    }
+    return filteredLines.join('\n').trim();
+  }
+
+  const cleanedRawContent = sanitizeHtmlContent(content);
 
   const fs = require('fs');
   const path = require('path');
@@ -65,7 +90,7 @@ async function execute(prompt, options) {
   const tempFile = path.resolve(tempDir, `tistory_post_${Date.now()}.json`);
   const postData = {
     title: title,
-    body: content,
+    body: cleanedRawContent,
     blocks: [],
     tags: tags
   };
@@ -83,11 +108,25 @@ async function execute(prompt, options) {
     if (parsedObj.title || parsedObj.blocks || parsedObj.content || parsedObj.body) {
       Object.assign(postData, parsedObj);
       if (parsedObj.title) title = parsedObj.title;
-      if (parsedObj.content) postData.body = parsedObj.content;
-      if (parsedObj.body) postData.body = parsedObj.body;
+      if (parsedObj.content) postData.body = sanitizeHtmlContent(parsedObj.content);
+      if (parsedObj.body) postData.body = sanitizeHtmlContent(parsedObj.body);
       if (parsedObj.tags) postData.tags = parsedObj.tags;
     }
-  } catch(e) {}
+  } catch(e) {
+    // JSON 파싱에 실패한 경우 (순수 HTML 본문인 경우):
+    // 제목이 본문 전체 매핑 등으로 인해 HTML을 포함하고 있다면 <h1> 태그에서 제목 추출 시도
+    const { extractFirstH1PlainTextFromHtml } = require('../lib/tistory_publish_harvest');
+    const h1Title = extractFirstH1PlainTextFromHtml(postData.body);
+    if (h1Title) {
+      title = h1Title;
+    }
+  }
+
+  // 최종 타이틀 클리닝 (대화형 헤더 제거)
+  if (title.startsWith('Gemini의 응답')) {
+    title = title.replace(/^Gemini의 응답\s*(HTML)?\s*/i, '').trim();
+  }
+  postData.title = title;
 
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
 
@@ -129,7 +168,7 @@ async function execute(prompt, options) {
         kakaoPassword: params.kakaoPassword || '',
         contentFile: tempFile,
         images: imageArray,
-        visibility: '0', // 0: 비공개(초안) 우선
+        visibility: String(params.visibility !== undefined ? params.visibility : '0'),
         headless: options.headless !== false,
         logger: customLogger,
         withImages: params.withImages === true,
