@@ -683,6 +683,7 @@ code: 'Enter',
 key: 'Enter',
 nativeVirtualKeyCode: 13,
 });
+await sleep(150); // 단락 생성 대기 대기시간 추가
 } else {
 await cdp.send('Input.dispatchKeyEvent', { type: 'char', text: ch });
 }
