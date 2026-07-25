@@ -98,23 +98,52 @@ Example:
 
 async function tryDismissDraftPopup(page) {
   try {
-    const clicked = await page.evaluate(() => {
-      const popup =
-        document.querySelector('.se-popup-container.__se-pop-layer') ||
-        document.querySelector('.se-popup-container');
-      if (!popup) return false;
-      const titleEl = popup.querySelector('.se-popup-title');
-      const titleText = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!/작성\s*중인\s*글이\s*있습니다/.test(titleText)) return false;
-      const btn =
-        popup.querySelector('button.se-popup-button-cancel') ||
-        popup.querySelector('.se-popup-button-cancel');
-      if (!btn) return false;
-      btn.click();
-      return true;
-    });
-    if (clicked) await sleep(400);
-  } catch {
+    for (const frame of page.frames()) {
+      try {
+        const clicked = await frame.evaluate(() => {
+          const popup =
+            document.querySelector('.se-popup-container.__se-pop-layer') ||
+            document.querySelector('.se-popup-container') ||
+            document.querySelector('.se-popup-container-wrap');
+          if (!popup) return false;
+          
+          const titleEl = popup.querySelector('.se-popup-title') || popup.querySelector('.se-popup-message');
+          const titleText = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
+          const bodyText = (popup.textContent || '').replace(/\s+/g, ' ').trim();
+          
+          const isDraftPopup = 
+            /작성\s*중인\s*글이\s*있습니다/.test(titleText) || 
+            /작성\s*중인\s*글이\s*있습니다/.test(bodyText) ||
+            /이어서\s*작성/.test(bodyText) ||
+            /임시저장/.test(bodyText);
+            
+          if (!isDraftPopup) return false;
+          
+          // "취소" 텍스트를 가진 버튼 우선 클릭
+          const buttons = Array.from(popup.querySelectorAll('button, a, div[role="button"]'));
+          const cancelBtn = buttons.find(b => (b.textContent || '').trim().includes('취소'));
+          if (cancelBtn) {
+            cancelBtn.click();
+            return true;
+          }
+          
+          const btn =
+            popup.querySelector('button.se-popup-button-cancel') ||
+            popup.querySelector('.se-popup-button-cancel') ||
+            popup.querySelector('button[class*="cancel"]');
+          if (!btn) return false;
+          btn.click();
+          return true;
+        });
+        if (clicked) {
+          await sleep(500);
+          return;
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  } catch (err) {
     /* ignore */
   }
 }
