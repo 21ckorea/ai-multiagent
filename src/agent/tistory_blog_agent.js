@@ -18,7 +18,11 @@ async function execute(prompt, options) {
     const promptToParse = options?.rawPrompt || prompt;
     const jsonMatch = promptToParse.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      params = JSON.parse(jsonMatch[0]);
+      let jsonText = jsonMatch[0];
+      // 주석 제거 (// 및 /* */ 형식)
+      jsonText = jsonText.replace(/\/\/.*$/gm, '');
+      jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, '');
+      params = JSON.parse(jsonText);
       
       // params의 각 값에 대해 {{...}} 패턴이 있으면 context에서 찾아서 치환 (안전한 매핑)
       if (options?.context) {
