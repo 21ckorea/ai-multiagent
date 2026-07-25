@@ -343,10 +343,19 @@ async function runWorkflow(workflow, initialInput) {
           });
         } else if (step.type === 'plugin_naver_publish') {
           const naverBlogAgent = require('../agent/naver_blog_agent');
-          output = await naverBlogAgent.execute(step.prompt, { // 파싱 오류 방지를 위해 원본 prompt도 전달 가능하지만 하위호환을 위해 resolvedPrompt 유지. 대신 플러그인에서 context 활용
+          output = await naverBlogAgent.execute(step.prompt, { 
             log: (msg) => sendSSE({ type: 'step_log', stepId: step.id, message: msg }),
             context,
-            rawPrompt: step.prompt
+            rawPrompt: step.prompt,
+            headless: step.headless
+          });
+        } else if (step.type === 'plugin_tistory_publish') {
+          const tistoryBlogAgent = require('../agent/tistory_blog_agent');
+          output = await tistoryBlogAgent.execute(step.prompt, {
+            log: (msg) => sendSSE({ type: 'step_log', stepId: step.id, message: msg }),
+            context,
+            rawPrompt: step.prompt,
+            headless: step.headless
           });
         } else {
           output = `[ERROR] 알 수 없는 스텝 타입: ${step.type}`;
