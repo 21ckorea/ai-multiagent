@@ -1,17 +1,16 @@
 'use strict';
 
-const naverEditorHelper = require('../lib/naver_editor');
-const naverPublishHelper = require('../lib/playwright_naver_publish');
+const tistoryPublishHelper = require('../lib/playwright_tistory_publish');
 
 /**
- * Naver Blog Publish Agent
+ * Tistory Blog Publish Agent
  * 
  * @param {string} prompt - JSON format instructions
  * @param {object} options - Options object
  * @returns {Promise<string>}
  */
 async function execute(prompt, options) {
-  options?.log?.('Naver 자동 포스팅 에이전트 실행...');
+  options?.log?.('Tistory 자동 포스팅 에이전트 실행...');
   
   let params = {};
   try {
@@ -42,7 +41,6 @@ async function execute(prompt, options) {
 
   let title = params.title || '새 블로그 포스트';
   try {
-    // 만약 전달받은 title이 JSON 문자열이라면 (예: google_sheet_agent의 출력값 전체) 내부의 title 필드 추출
     const parsedTitle = JSON.parse(title);
     if (parsedTitle && parsedTitle.title) {
       title = parsedTitle.title;
@@ -64,7 +62,7 @@ async function execute(prompt, options) {
   const tempDir = path.resolve(process.cwd(), 'temp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
   
-  const tempFile = path.resolve(tempDir, `naver_post_${Date.now()}.json`);
+  const tempFile = path.resolve(tempDir, `tistory_post_${Date.now()}.json`);
   const postData = {
     title: title,
     body: content,
@@ -94,16 +92,14 @@ async function execute(prompt, options) {
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
 
   try {
-    // 1. 네이버 로그인 및 에디터 진입 (playwright 기반)
-    options?.log?.('네이버 스마트에디터 접속 중...');
+    options?.log?.('티스토리 스마트에디터 접속 중...');
     
-    // 블로그 ID 추출 (없으면 기본값 경고)
-    const blogId = params.blogId || 'YOUR_BLOG_ID';
-    if (blogId === 'YOUR_BLOG_ID') {
-      return `[ERROR] 프롬프트에 "blogId": "본인네이버아이디" 를 추가해 주세요.`;
+    const blogUrl = params.blogUrl || 'YOUR_BLOG_URL';
+    if (blogUrl === 'YOUR_BLOG_URL') {
+      return `[ERROR] 프롬프트에 "blogUrl": "본인티스토리블로그주소" 를 추가해 주세요.`;
     }
 
-    if (typeof naverPublishHelper.run === 'function') {
+    if (typeof tistoryPublishHelper.run === 'function') {
       let imageArray = [];
       if (images) {
         if (typeof images === 'string') {
@@ -127,30 +123,31 @@ async function execute(prompt, options) {
         result: (status, msg) => options?.log?.(`[RESULT: ${status}] ${msg}`)
       };
 
-      const exitCode = await naverPublishHelper.run({
-        blogId: blogId,
-        naverId: params.naverId || '',
+      const exitCode = await tistoryPublishHelper.run({
+        blogUrl: blogUrl,
+        kakaoId: params.kakaoId || '',
+        kakaoPassword: params.kakaoPassword || '',
         contentFile: tempFile,
         images: imageArray,
         visibility: '0', // 0: 비공개(초안) 우선
-        noPublish: false,
         headless: true, // 기본으로 백그라운드에서 조용히 실행
-        logger: customLogger
+        logger: customLogger,
+        withImages: params.withImages === true,
       });
       
       if (exitCode === 0) {
         return JSON.stringify({
           success: true,
-          message: '네이버 블로그 포스팅 발행이 완료되었습니다.',
+          message: '티스토리 블로그 포스팅 발행이 완료되었습니다.',
         });
       } else {
-        return `[ERROR] 네이버 포스팅 발행 실패 (종료 코드: ${exitCode})`;
+        return `[ERROR] 티스토리 포스팅 발행 실패 (종료 코드: ${exitCode})`;
       }
     } else {
-      return `[ERROR] naverPublishHelper.run 함수를 찾을 수 없습니다.`;
+      return `[ERROR] tistoryPublishHelper.run 함수를 찾을 수 없습니다.`;
     }
   } catch (err) {
-    return `[ERROR] 네이버 포스팅 실패: ${err.message}`;
+    return `[ERROR] 티스토리 포스팅 실패: ${err.message}`;
   }
 }
 
