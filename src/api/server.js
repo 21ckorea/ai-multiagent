@@ -37,11 +37,11 @@ function loadSettings() {
     console.error('Failed to load settings:', err);
   }
   return {
-    blogUrl: 'https://today-ittrend.tistory.com',
-    kakaoId: 'seoingyo@naver.com',
+    blogUrl: '',
+    kakaoId: '',
     kakaoPassword: '',
-    blogId: 'trend_signal',
-    naverId: 'seoingyo'
+    blogId: '',
+    naverId: ''
   };
 }
 

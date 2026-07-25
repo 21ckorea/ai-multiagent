@@ -1038,11 +1038,11 @@ async function loadSettingsForm() {
       const entries = Object.entries(data.settings);
       if (entries.length === 0) {
         // 기본 템플릿 로드
-        addSettingRow('blogUrl', 'https://today-ittrend.tistory.com', false);
-        addSettingRow('kakaoId', 'seoingyo@naver.com', false);
+        addSettingRow('blogUrl', '', false);
+        addSettingRow('kakaoId', '', false);
         addSettingRow('kakaoPassword', '', true);
-        addSettingRow('blogId', 'trend_signal', false);
-        addSettingRow('naverId', 'seoingyo', false);
+        addSettingRow('blogId', '', false);
+        addSettingRow('naverId', '', false);
       } else {
         for (const [k, v] of entries) {
           const isPass = k.toLowerCase().includes('password') || k.toLowerCase().includes('pw') || k.toLowerCase().includes('secret');
