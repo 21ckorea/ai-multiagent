@@ -139,7 +139,7 @@ async function execute(prompt, options) {
         images: imageArray,
         visibility: '0', // 0: 비공개(초안) 우선
         noPublish: false,
-        headless: true, // 기본으로 백그라운드에서 조용히 실행
+        headless: options.headless !== false,
         logger: customLogger
       });
       
