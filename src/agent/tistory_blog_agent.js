@@ -19,8 +19,8 @@ async function execute(prompt, options) {
     const jsonMatch = promptToParse.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       let jsonText = jsonMatch[0];
-      // 주석 제거 (// 및 /* */ 형식)
-      jsonText = jsonText.replace(/\/\/.*$/gm, '');
+      // 주석 제거 (// 및 /* */ 형식, 단 URL 프로토콜인 http://, https:// 의 // 는 제외)
+      jsonText = jsonText.replace(/(?<!:)\/\/.*$/gm, '');
       jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, '');
       params = JSON.parse(jsonText);
       
@@ -40,6 +40,7 @@ async function execute(prompt, options) {
       }
     }
   } catch (e) {
+    options?.log?.(`[WARN] JSON 파싱 실패: ${e.message}`);
     params = {};
   }
 
