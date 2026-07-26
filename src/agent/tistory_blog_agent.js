@@ -120,10 +120,12 @@ async function execute(prompt, options) {
   } catch(e) {
     // JSON 파싱에 실패한 경우 (순수 HTML 본문인 경우):
     // 제목이 본문 전체 매핑 등으로 인해 HTML을 포함하고 있다면 <h1> 태그에서 제목 추출 시도
-    const { extractFirstH1PlainTextFromHtml } = require('../lib/tistory_publish_harvest');
-    const h1Title = extractFirstH1PlainTextFromHtml(postData.body);
-    if (h1Title) {
-      title = h1Title;
+    if (/<[a-z/][^>]*>/i.test(title)) {
+      const { extractFirstH1PlainTextFromHtml } = require('../lib/tistory_publish_harvest');
+      const h1Title = extractFirstH1PlainTextFromHtml(postData.body);
+      if (h1Title) {
+        title = h1Title;
+      }
     }
   }
 
