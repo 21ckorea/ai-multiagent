@@ -17,6 +17,7 @@ logs/
 profiles/
 data/sessions/
 data/workflows/
+data/settings.json
 
 # Excluded per user request
 references/

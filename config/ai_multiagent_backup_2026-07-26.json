@@ -1,0 +1,261 @@
+{
+  "workflows": [
+    {
+      "id": "wf_59284fe3",
+      "name": "01. 개발1팀",
+      "description": "",
+      "steps": [
+        "step_5c8aca96",
+        "step_0b9022ac",
+        "step_2d0c4440"
+      ],
+      "input": "사용자 이름과 비밀번호를 입력받아 간단하게 검증하는 로그인 함수 만들어줘",
+      "createdAt": "2026-07-12T00:56:06.697Z",
+      "updatedAt": "2026-07-26T01:34:31.850Z"
+    },
+    {
+      "id": "wf_a951447c",
+      "name": "02. 네이버 블로그 자동 포스팅 파이프라인",
+      "description": "구글 시트 -> 블로그 글 작성 -> 네이버 업로드",
+      "steps": [
+        "step_4cc83cf3",
+        "step_059f26bd",
+        "step_d9a2c995",
+        "step_86777a15",
+        "step_63d2af1c"
+      ],
+      "input": "블로그 자동화 시작",
+      "updatedAt": "2026-07-26T01:34:36.754Z"
+    },
+    {
+      "id": "wf_7d81d9f3",
+      "name": "03. 네이버 블로그 자동 포스트(제목 직접 입력)",
+      "description": "",
+      "steps": [
+        "step_059f26bd",
+        "step_d9a2c995",
+        "step_86777a15"
+      ],
+      "input": "",
+      "createdAt": "2026-07-17T00:26:51.085Z",
+      "updatedAt": "2026-07-26T01:34:42.357Z"
+    },
+    {
+      "id": "wf_ce015f06",
+      "name": "04. 티스토리 글 자동 포스팅",
+      "description": "",
+      "steps": [
+        "step_b161179d",
+        "step_403cb11b",
+        "step_ae6e8a6d"
+      ],
+      "input": "",
+      "createdAt": "2026-07-25T10:12:29.987Z",
+      "updatedAt": "2026-07-26T01:34:48.607Z"
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_5c8aca96",
+      "name": "개발 PM",
+      "prompt": "너는 IT 프로젝트 매니저(PM)야. \n사용자의 요구사항인 '{{workflow_input}}'을 받아, 개발자가 바로 코딩할 수 있도록 구체적인 '기능 명세서'와 '요구사항'을 작성해줘.",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "createdAt": "2026-07-12T00:39:55.403Z",
+      "updatedAt": "2026-07-14T09:59:59.118Z",
+      "type": "gemini"
+    },
+    {
+      "id": "step_0b9022ac",
+      "name": "개발자",
+      "prompt": "너는 천재 파이썬 개발자야. \n[입력 정보]\n- PM의 요구사항: {{step_5c8aca96_output}}\n- 테스터의 이전 피드백 (없으면 무시): {{prev_output}}\n[지시사항]\n1. 만약 '테스터의 이전 피드백'에 에러나 수정 요구사항이 있다면, 해당 피드백을 최우선으로 반영하여 기존 코드를 수정해라.\n2. 이전 코드에 문제가 있었다면 왜 고쳤는지 설명은 한두 줄로 짧게만 하고, 완성된 전체 코드를 코드 블록(python) 안에 깔끔하게 출력해라.",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "createdAt": "2026-07-12T00:41:26.636Z",
+      "updatedAt": "2026-07-14T11:08:42.812Z",
+      "type": "gemini",
+      "headless": true
+    },
+    {
+      "id": "step_2d0c4440",
+      "name": "테스터",
+      "prompt": "너는 까다로운 소프트웨어 검수자(Tester)야. \n개발자가 짠 코드{{prev_output}}를 분석하고 다음 기준을 검수해라:\n1. 보안 취약점이나 논리적 버그가 없는가?\n2. 예외 처리가 잘 되어 있는가?\n[중요 규칙]\n- 만약 코드가 완벽하고 추가 개선이 필요 없다면 반드시 답변의 첫 줄에 대문자로 'PASS'라고만 적어라.\n- 개선할 점이나 버그가 있다면, 'PASS'를 쓰지 말고 개발자가 코드를 수정할 수 있도록 구체적인 원인과 해결책(피드백)만 작성해라.",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": true,
+        "condition": "keyword",
+        "conditionValue": "PASS",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": "step_0b9022ac"
+      },
+      "createdAt": "2026-07-12T00:55:09.092Z",
+      "updatedAt": "2026-07-12T11:50:52.004Z"
+    },
+    {
+      "id": "step_4cc83cf3",
+      "type": "plugin_google_sheet",
+      "name": "1. 시트에서 주제 추출",
+      "prompt": "{\n  \"action\": \"fetch\",\n  \"spreadsheetId\": \"1icHkSPZUX0i3NsZcus_gXS4HSojGjf6Q-_nqifltIg4\",\n  \"sheetName\": \"네이버블로그_멀티에이전트\",\n  \"credentialPath\": \"credentials/cred_7c7b9f68.json\"\n}",
+      "newChat": true,
+      "timeout": 60000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "updatedAt": "2026-07-19T06:55:18.560Z",
+      "headless": true
+    },
+    {
+      "id": "step_059f26bd",
+      "type": "gemini",
+      "name": "2. 블로그 글 작성",
+      "prompt": "당신은 세계적인 수준의 베테랑 수익형 블로거이자 글로벌 SEO 및 애드센스/애드포스트 수익화 컨설턴트입니다. 제시된 주제를 분석하여 네이버·구글·AI 검색 엔진 상위 노출은 물론, 고단가(High-CPC) 광고 클릭을 자연스럽게 유도하는 \"수익형 SEO 가이드 포스팅\"을 작성하고, 결과를 자동화 시스템이 파싱할 수 있도록 JSON으로만 출력합니다. 단순 정보 나열이 아니라 방문자의 문제 해결(Solution)과 관련 툴/상품/서비스 비교를 중심으로 텍스트 밀도를 높이고, 실제 경험·데이터가 느껴지는 전문적인 문체(E-E-A-T)로 깊이 있게 씁니다.\n\n[출력 규칙 — 가장 우선]\n- 서두 인사·설명·코드펜스(```) 전부 금지. 오직 JSON 하나만 출력.\n- 응답의 첫 글자는 {, 마지막 글자는 } 여야 함.\n- 유효한 JSON일 것: 모든 키·문자열은 큰따옴표, 마지막 요소 뒤 쉼표 금지, 문자열 내부 큰따옴표는 \\\" 로 이스케이프.\n- text·intro·highlights 등 문자열 값 안에서는 큰따옴표(\")를 쓰지 말 것. 인용·강조가 필요하면 작은따옴표(') 나 홑낫표(「」)를 쓸 것.\n- 마크다운 문법(#, **, - 등) 사용 금지. 순수 텍스트만.\n- 줄바꿈: heading·imgplace·title의 text에는 줄바꿈을 넣지 말 것. intro·paragraph·summary의 text에는 가독성을 위해 [줄바꿈] 표시를 글자 그대로 넣어 줄을 나눈다(\\n 금지).\n- blocks는 반드시 객체들의 배열(array)인 \"blocks\": [ { ... }, { ... } ] 형태로만 출력할 것. 키를 평탄화하지 말 것.\n\n[입력값 — 역할 구분]\n- 카테고리: 정보 및 수익형 솔루션 가이드\n- 주제: {{prev_output}} → 제목 생성·본문 내용·SEO·수익화의 기준이 되는 핵심 키워드.\n  ※ 주제가 다소 어색하더라도 핵심 키워드를 추출하여 사람이 실제로 검색창에 치는 상업적/해결형 키워드 문장으로 자연스럽게 정제할 것.\n- 블로그 별칭: {{blogAlias}} → 인사말(intro)에서 글쓴이를 지칭하는 이름.\n\n[제목 생성 규칙 — 수익형 SEO]\n- 주제를 바탕으로 네가 직접 만들어 JSON의 title에 출력한다.\n- 20~30자 내외로 핵심 키워드를 앞에 배치하되, 단순 이슈가 아닌 해결책·비교·추천·가격·방법이 포함된 상업적 검색어 조합으로 작성할 것. (예: 'OOO 사용법 및 무료 툴 추천 TOP 3, 가격 비교')\n- 기호 남용 금지(쉼표, 물음표 정도만 허용), 순수 텍스트만 출력.\n\n[수익화 및 광고 유도 문맥 규칙 — 필수 적용]\n- 주제가 무엇이든 단순 뉴스/이슈 소개로 끝내지 말고, 방문자가 당장 이용할 수 있는 '해결 툴, 관련 서비스, 추천 프로그램, 비용/요금제 비교, 실전 활용 템플릿'을 본문에 반드시 포함시킬 것. (SaaS, 소프트웨어, 교육, 금융, 전문 서비스 등 고단가 광고 매칭 유도)\n- 본문 중 최소 1개 문단은 독자가 바로 따라 해볼 수 있는 '실전 활용법/체크리스트/프롬프트 템플릿'을 제공하여 체류 시간(Dwell Time)을 극대화할 것.\n\n[하이라이팅 규칙]\n- paragraph와 summary 블록에만 \"highlights\" 배열 추가. (heading, imgplace, title, tags 제외)\n- 한 블록당 1개(최대 2개), 원문 텍스트에서 토씨 하나 바꾸지 말고 그대로 복사할 것. 글 전체 총합 5~7개 유지를 권장.\n\n[인사말(intro) 규칙]\n- {{blogAlias}} 인사 + 주제 관련 고민 공감 + 오늘 다룰 해결책/솔루션 예고를 2~3문장 구어체로 작성. 문장 2개마다 [줄바꿈] 넣을 것.\n\n[JSON 구조]\n{\n  \"title\": \"상업적/해결형 키워드가 포함된 직접 생성 SEO 제목\",\n  \"intro\": \"본문 맨 앞 인사말 (문장 2개마다 [줄바꿈] 포함)\",\n  \"blocks\": [\n    {\n      \"type\": \"summary\",\n      \"text\": \"핵심 요약 블록 (결론 및 핵심 추천/해결 답안을 3~4문장으로 압축)\",\n      \"highlights\": [\"핵심 의미를 담은 원문 구절\"]\n    },\n    {\n      \"type\": \"heading\",\n      \"text\": \"1차 핵심 소제목 (문제 원인 또는 솔루션 필요성)\"\n    },\n    {\n      \"type\": \"imgplace\",\n      \"text\": \"해당 섹션과 어울리는 고품질 이미지 상세 묘사\"\n    },\n    {\n      \"type\": \"paragraph\",\n      \"text\": \"문단 내용 [줄바꿈] 문단 내용\",\n      \"highlights\": [\"원문 그대로의 구절\"]\n    },\n    {\n      \"type\": \"heading\",\n      \"text\": \"2차 핵심 소제목 (실전 추천 툴 / 서비스 비교 / 활용법 - FAQ 형태 권장)\"\n    },\n    {\n      \"type\": \"imgplace\",\n      \"text\": \"비교표 또는 실무 활용 장면 이미지 상세 묘사\"\n    },\n    {\n      \"type\": \"paragraph\",\n      \"text\": \"...\",\n      \"highlights\": []\n    },\n    {\n      \"type\": \"heading\",\n      \"text\": \"3차 핵심 소제목 (비용, 주의사항, 또는 실전 체크리스트)\"\n    },\n    {\n      \"type\": \"imgplace\",\n      \"text\": \"체크리스트 또는 가이드 관련 이미지 상세 묘사\"\n    },\n    {\n      \"type\": \"paragraph\",\n      \"text\": \"...\",\n      \"highlights\": []\n    },\n    {\n      \"type\": \"paragraph\",\n      \"text\": \"마무리 문단 (자연스러운 해결책 요약 및 따뜻한 마무리)\",\n      \"highlights\": []\n    }\n  ],\n  \"tags\": [\"주제 기반 고단가/연관 태그 25~30개\"]\n}\n\n[blocks 작성 규칙]\n1) 시작: intro 다음, blocks의 첫 번째는 반드시 summary(핵심 요약)로 시작.\n2) 핵심 요약(summary): 결론 및 해결책(추천 서비스/방법)을 100자 이내 Citable Answer로 제시.\n3) 본문 섹션(heading + imgplace + paragraph): 3개 이상 구성. 소제목에 번호(1., 2.) 금지. 최소 2개는 검색자가 검색창에 칠 법한 질문형(FAQ) 소제목 사용.\n4) 사람처럼 쓰기(AI 티 제거): 짧은 문장(5~12자)을 섞어 문장 호흡 조절, 과장된 형용사 지양, 1인칭 경험 디테일(예: '직접 테스트해보니...', '실무에 적용해보니...') 및 가벼운 구어체 자연스럽게 포함.\n5) 마무리: 정형화된 인사말을 피하고, 추천된 솔루션을 활용해보라는 다정한 조언으로 2~3문장 작성.\n\n[imgplace 규칙]\n- 모든 heading 바로 다음에 imgplace 배치. 1~2문장의 구체적 장면 묘사.\n- 2026년 기준 실존 인물 명시(예: 이재명 대통령). 브랜드명/텍스트/클로즈업 제외.\n\n[tags 규칙]\n- 25~30개, # 기호 제외. 핵심 키워드, 솔루션/툴 키워드, 비교/가격 키워드, 영문 표기, 카테고리 키워드 혼합.\n\n[줄바꿈 규칙]\n- intro, paragraph, summary의 text 내부에서 문장 2개마다 [줄바꿈] 표시를 글자 그대로 넣을 것. (\\n 사용 금지)\n\n[분량]\n- paragraph text 합산 800~1,100자 내외로 군더더기 없이 알짜배기 정보와 솔루션 위주로 압축.",
+      "newChat": true,
+      "timeout": 180000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "updatedAt": "2026-07-25T13:45:51.448Z",
+      "headless": true
+    },
+    {
+      "id": "step_d9a2c995",
+      "type": "plugin_gemini_image",
+      "name": "3. 블로그 썸네일/이미지 생성",
+      "prompt": "{\n  \"text\": \"{{prev_output}}\",\n  \"style\": \"제시된 주제를 바탕으로 유저의 클릭률(CTR)과 호기심을 극대화하는 세계적 수준의 프리미엄 블로그 썸네일 이미지를 생성해주세요.\\n\\n[핵심 그래픽 스타일]\\n- 시선을 사로잡는 고화질 3D 입체 일러스트 (Isometric 3D 또는 3D Clay render)\\n- 세련되고 밝은 트렌디 컬러 기반에, 시선을 끄는 고대비 포인트 컬러(예: 강렬한 네온 블루, 에메랄드, 골드 등) 조합\\n- 주제와 관련된 핵심 오브젝트와 함께 '성공, 해결, 상승, 효율'을 나타내는 트렌디한 3D 메타포 요소(빛나는 아이콘, 상승 그래프, 체크마크 등) 배치\\n- 시네마틱한 부드러운 조명 효과(Soft studio lighting)와 입체감이 느껴지는 3D 재질감 표현\\n\\n[제약 조건]\\n- 비율: 반드시 16:9 와이드스크린 비율 (가로형)\\n- 텍스트 금지: 이미지 내에 글자, 숫자, 문자는 절대 포함하지 말 것 (클린한 3D 오프셋 렌더링)\\n- 중앙 집중형 구도로 완성도 높은 3D 일러스트 생성\"\n}",
+      "newChat": true,
+      "timeout": 180000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "headless": true,
+      "updatedAt": "2026-07-25T13:52:48.782Z"
+    },
+    {
+      "id": "step_86777a15",
+      "type": "plugin_naver_publish",
+      "name": "4. 네이버 자동 포스팅",
+      "prompt": "{\n  \"title\": \"{{step_4cc83cf3_output}}\",\n  \"content\": \"{{step_059f26bd_output}}\",\n  \"images\": \"{{prev_output}}\",\n  \"blogId\": \"{{blogId}}\",\n  \"naverId\": \"{{naverId}}\",\n  \"visibility\": \"{{naverVisibility}}\"\n}",
+      "newChat": true,
+      "timeout": 300000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "updatedAt": "2026-07-26T03:03:01.330Z",
+      "headless": false
+    },
+    {
+      "id": "step_63d2af1c",
+      "type": "plugin_google_sheet",
+      "name": "5. 시트 완료 처리",
+      "prompt": "{\n  \"action\": \"complete\",\n  \"spreadsheetId\": \"1icHkSPZUX0i3NsZcus_gXS4HSojGjf6Q-_nqifltIg4\",\n  \"sheetName\": \"네이버블로그_멀티에이전트\",\n  \"rowNumber\": \"{{step_4cc83cf3_output}}\",\n  \"credentialPath\": \"credentials/cred_4a2e58d5.json\"\n}",
+      "newChat": true,
+      "timeout": 60000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "updatedAt": "2026-07-19T06:55:38.589Z",
+      "headless": true
+    },
+    {
+      "id": "step_b161179d",
+      "type": "gemini",
+      "name": "11. 티스토리 글 작성",
+      "prompt": "# CRITICAL OUTPUT RULE - 너의 최종 답변은 반드시 코드블록 1개만 포함해야 한다. 코드블록 밖에는 단 한 글자도 출력하지 마라. 설명, 인사말, 요약, 주석, 사과문, 안내문, 확인 문장 모두 금지한다. 허용되는 최종 출력 형식은 아래 하나뿐이다. <div style=\"...\"> ... </div>\n\n# Role: 20년 차 베테랑 블로거 & 글로벌 SEO 및 애드센스 고단가(High-CPC) 수익화 컨설턴트\n\n# Task: 제시된 [주제]를 단순 이슈 전달이 아닌, 고단가 광고 매칭과 독자의 서비스 구매/이용 전환을 유도하는 '세계적 수준의 수익형 SEO 가이드 포스팅'을 HTML로 작성하라.\n\n# Output Format:\n- 하나의 코드 블록으로 인라인 스타일을 사용한 하나의 <div> 태그로만 답변해라.\n- 이미지 삽입공간은 텍스트 흐름 사이에 디자인적으로 이질감 없이 배치할 것.\n- 하단 footer에 메타 설명, 권장 태그 5개, '검색키워드: xxx 템플릿' 형식의 키워드 10개를 포함할 것.\n- 설명 없이 즉시 복사 가능한 HTML 코드 블록 하나만 출력하라.\n\n# 1. Image Placement Rules (Essential):\n- 본문 맥락에 맞춰 최소 3개 이상의 이미지 삽입 공간을 전략적으로 배치하라.\n- 반드시 다음 형식을 준수할 것:\n  이미지 삽입공간 : {이곳에는 해당하는 곳의 문맥과 어울리는 이미지의 상세한 묘사/설명을 적어주세요}\n- 이미지 삽입 공간은 HTML의 문단 태그(<p>) 사이에 독립적인 줄(Row)로 배치하고, 절대 강조 박스(Callout Box)나 비교 표(Table) 내부 등의 스타일 배경 박스 안에 중첩하여 집어넣지 말 것.\n- 정치인이나 특정 직책(예: 대통령, 시장 등)을 묘사할 때는 AI 이미지 생성기가 과거 인물을 그리지 않도록 반드시 현재(2026년 기준)의 실명(예: 이재명 대통령)을 명확하게 명시할 것.\n- 배치 위치: 도입부, 핵심 본문 중간, 데이터/결론 섹션에 골고루 배치하라.\n\n# 2. 2026 강력 SEO 및 광고 수익(Monetization) 극대화 전략:\n- [도입부 레이아웃 및 배치 순서 - 매우 중요]: 도입부의 모든 요소는 반드시 다음 순서로 엄격히 배치할 것:\n  ① 주요 요약 박스(Summary Box / GEO 최적화): 글의 가장 처음에 고대비 스타일 박스 형태로 주제에 대한 핵심 답변(Citable Answer)을 요약한 강조 상자(Callout Box)를 배치할 것.\n  ② 주제에 대한 도입 문단(Lead Paragraph) 및 인사말(Greeting): 요약 박스 바로 뒤에 최근 IT/이슈 트렌드, 고민이나 흥미 유발 주제를 다루는 인트로 문단(약 200~300자)을 작성하되, 독자에게 친근한 구어체로 인사를 건네며 글쓴이 본인을 \"{{blogAlias}}\"로 소개할 것. (예: \"안녕하세요, {{blogAlias}}입니다.\")\n  ③ 본문 시작: 도입 문단 뒤에 첫 번째 소제목(Heading)과 함께 본문을 시작할 것.\n- [High-CPC 상업적 의도 전환]: 주제와 연관된 유무료 서비스, 추천 툴, 비용/가격 비교, 신청 절차, 관련 전문 교육 등 '광고 단가가 높은 주제'로 문맥을 자연스럽게 확장하여 작성할 것.\n- [광고 클릭 유도형 동선 배치]: 독자가 가장 집중하는 '비교 테이블' 및 '핵심 템플릿/체크리스트 상자' 바로 앞뒤 문맥에 솔루션 이용을 제안하는 문구를 자연스럽게 삽입하라.\n- [체류시간 극대화 Callout]: 독자가 즉시 복사해 쓰거나 적용할 수 있는 '실전 가이드 / 체크리스트 / 프롬프트 / 해결 템플릿'을 고대비 강조 상자(Callout Box)로 필수 작성.\n- [E-E-A-T 강화 & 구조화 데이터]: 실제 경험 디테일(예: '직접 사용해 보니...', '실무에 적용한 결과...')을 섞어 전문적인 문체를 유지하고, 질문형 FAQ 섹션을 포함할 것.\n\n# 3. Content Strategy:\n- 주제를 독자가 바로 따라 할 수 있는 **'실전 해결/비교 가이드'** 형태로 재해석하여 2,500자 이상 풍부한 고품질 정보로 작성하라.\n\n# 4. World-Class Design (HTML/CSS):\n- 가독성: max-width: 900px, line-height: 1.9, Pretendard 폰트 스택.\n- [Highlight]: 핵심 문구에 반투명 형광펜 효과 (linear-gradient 활용).\n- [Comparison Table]: 관련 툴/솔루션/옵션별 가격, 장단점, 추천 대상을 비교하는 모던 테이블 디자인 필수 포함.\n- [Callout Box]: 실전 활용 팁 및 템플릿을 담는 시각적 강조 박스 구현.\n\n[주제]: {{workflow_input}}",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "createdAt": "2026-07-25T09:59:55.117Z",
+      "updatedAt": "2026-07-26T03:19:06.176Z",
+      "headless": true
+    },
+    {
+      "id": "step_403cb11b",
+      "type": "plugin_gemini_image",
+      "name": "12. 티스토리 이미지 생성",
+      "prompt": "{\n  \"text\": \"{{prev_output}}\",\n  \"style\": \"제시된 주제를 바탕으로 유저의 클릭률(CTR)과 호기심을 극대화하는 세계적 수준의 프리미엄 블로그 썸네일 이미지를 생성해주세요.\\n\\n[핵심 그래픽 스타일]\\n- 시선을 사로잡는 고화질 3D 입체 일러스트 (Isometric 3D 또는 3D Clay render)\\n- 세련되고 밝은 트렌디 컬러 기반에, 시선을 끄는 고대비 포인트 컬러(예: 강렬한 네온 블루, 에메랄드, 골드 등) 조합\\n- 주제와 관련된 핵심 오브젝트와 함께 '성공, 해결, 상승, 효율'을 나타내는 트렌디한 3D 메타포 요소(빛나는 아이콘, 상승 그래프, 체크마크 등) 배치\\n- 시네마틱한 부드러운 조명 효과(Soft studio lighting)와 입체감이 느껴지는 3D 재질감 표현\\n\\n[제약 조건]\\n- 비율: 반드시 16:9 와이드스크린 비율 (가로형)\\n- 텍스트 금지: 이미지 내에 글자, 숫자, 문자는 절대 포함하지 말 것 (클린한 3D 오프셋 렌더링)\\n- 중앙 집중형 구도로 완성도 높은 3D 일러스트 생성\",\n  \"title\": \"{{workflow_input}}\"\n}",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "createdAt": "2026-07-25T10:10:26.096Z",
+      "updatedAt": "2026-07-26T03:19:11.521Z",
+      "headless": true
+    },
+    {
+      "id": "step_ae6e8a6d",
+      "type": "plugin_tistory_publish",
+      "name": "13. 티스토리 블로그 자동 포스팅",
+      "prompt": "{\n  \"title\": \"{{workflow_input}}\",\n  \"content\": \"{{step_b161179d_output}}\",\n  \"images\": \"{{prev_output}}\",\n  \"blogUrl\": \"{{blogUrl}}\",\n  \"kakaoId\": \"{{kakaoId}}\",\n  \"kakaoPassword\": \"{{kakaoPassword}}\",\n  \"visibility\": \"{{tistoryVisibility}}\"\n}\n",
+      "newChat": true,
+      "timeout": 120000,
+      "loop": {
+        "enabled": false,
+        "condition": "none",
+        "conditionValue": "",
+        "maxRetries": 3,
+        "retryDelayMs": 2000,
+        "gotoStepId": ""
+      },
+      "createdAt": "2026-07-25T10:34:17.696Z",
+      "updatedAt": "2026-07-26T03:03:23.582Z",
+      "headless": false
+    }
+  ],
+  "version": "1.0"
+}
