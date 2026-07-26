@@ -221,7 +221,7 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
     // Playwright가 자동으로 엘리먼트를 스크롤하고 중앙 좌표를 계산해 트리플 클릭합니다.
     // 마커가 span.__se-node이므로 정확히 텍스트 위에 트리플 클릭이 발생하며,
     // 네이티브 클릭이므로 스마트에디터의 내부 에디터 모델과 selection이 완벽히 동기화됩니다.
-    await el.click({ clickCount: 3, timeout: 5000 }).catch((err) => {
+    await el.click({ clickCount: 3, timeout: 5000, force: true }).catch((err) => {
       logger?.info?.(`[NAVER][IMG] native triple click failed: ${err.message}`);
     });
     await sleep(200);
@@ -234,7 +234,7 @@ async function pasteImageIntoNaverPlaceholder(naverPage, editorFrame, dataUrl, m
 
     // ── Step 2: fallback (선택이 안 되었을 경우 키보드로 전체 선택) ──────────
     if (selLen === 0) {
-      await el.click().catch(() => {});
+      await el.click({ force: true }).catch(() => {});
       await sleep(100);
       await naverPage.keyboard.press('Home');
       await sleep(50);
