@@ -2342,6 +2342,7 @@ async function publishTistoryPostAfterGate(page, html, publishOpts = {}, logger)
     page,
     {
       isPublic: publishOpts.isPublic === true,
+      visibility: publishOpts.visibility,
       categoryItemElementId: publishOpts.categoryItemElementId || publishOpts.categoryItemId || '',
       layerOpenDelayMs,
       coverDataUrl,
