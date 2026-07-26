@@ -80,7 +80,13 @@ async function execute(prompt, options) {
     const placeholders = extractImagePlaceholders(cleanText);
     
     if (placeholders && placeholders.length > 0) {
-      const h1 = extractFirstH1PlainTextFromHtml(cleanText);
+      let h1 = (typeof params.title === 'string' && params.title.trim()) ? params.title.trim() : '';
+      if (!h1) {
+        h1 = extractFirstH1PlainTextFromHtml(cleanText);
+      }
+      if (h1) {
+        h1 = h1.replace(/^\[?\d{1,2}\]?(?![\.\,]\d)[\s\.\,\-\_]+\s*/, '').trim();
+      }
       prompts.push({ type: 'thumbnail', text: `주제: ${h1 || '블로그 대표 이미지'}\n스타일: ${style}` });
       for (const ph of placeholders) {
         prompts.push({
