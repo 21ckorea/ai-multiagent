@@ -1039,7 +1039,8 @@ async function loadSettingsForm() {
     naverId: '네이버 로그인용 ID (예: seoingyo)',
     blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
     tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
-    visibility: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)'
+    naverVisibility: '네이버 발행 공개 설정 (0: 비공개, 1: 이웃공개, 2: 전체공개, 3: 서로이웃)',
+    tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 2: 전체공개)'
   };
 
   try {
@@ -1056,7 +1057,8 @@ async function loadSettingsForm() {
         addSettingRow('naverId', '', false, VAR_DESCRIPTIONS.naverId);
         addSettingRow('blogAlias', '', false, VAR_DESCRIPTIONS.blogAlias);
         addSettingRow('tistoryAlias', '', false, VAR_DESCRIPTIONS.tistoryAlias);
-        addSettingRow('visibility', '2', false, VAR_DESCRIPTIONS.visibility);
+        addSettingRow('naverVisibility', '2', false, VAR_DESCRIPTIONS.naverVisibility);
+        addSettingRow('tistoryVisibility', '0', false, VAR_DESCRIPTIONS.tistoryVisibility);
       } else {
         for (const [k, v] of entries) {
           let val = '';
@@ -1086,7 +1088,8 @@ const VAR_DESCRIPTIONS = {
   naverId: '네이버 로그인용 ID (예: seoingyo)',
   blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
   tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
-  visibility: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)'
+  naverVisibility: '네이버 발행 공개 설정 (0: 비공개, 1: 이웃공개, 2: 전체공개, 3: 서로이웃)',
+  tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 2: 전체공개)'
 };
 
 function addSettingRow(key = '', value = '', isPassword = false, description = '') {

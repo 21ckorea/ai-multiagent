@@ -44,7 +44,8 @@ function loadSettings() {
     naverId: { value: '', description: '네이버 로그인용 ID (예: seoingyo)' },
     blogAlias: { value: '', description: '네이버 블로그 별칭 (인사말 지칭 이름, 예: 마크 소장)' },
     tistoryAlias: { value: '', description: '티스토리 블로그 별칭 (인사말 지칭 이름, 예: 라이언)' },
-    visibility: { value: '2', description: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)' }
+    naverVisibility: { value: '2', description: '네이버 발행 공개 설정 (0: 비공개, 1: 이웃공개, 2: 전체공개, 3: 서로이웃)' },
+    tistoryVisibility: { value: '0', description: '티스토리 발행 공개 설정 (0: 비공개(초안), 2: 전체공개)' }
   };
 }
 
