@@ -1526,6 +1526,10 @@ body {
   flex: 2;
 }
 
+.desc-col {
+  flex: 2;
+}
+
 .action-col {
   width: 100px;
   justify-content: center;

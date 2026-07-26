@@ -37,11 +37,14 @@ function loadSettings() {
     console.error('Failed to load settings:', err);
   }
   return {
-    blogUrl: '',
-    kakaoId: '',
-    kakaoPassword: '',
-    blogId: '',
-    naverId: ''
+    blogUrl: { value: '', description: '티스토리 블로그 주소 (예: https://today-ittrend.tistory.com)' },
+    kakaoId: { value: '', description: '티스토리 계정 ID (이메일)' },
+    kakaoPassword: { value: '', description: '티스토리 계정 비밀번호' },
+    blogId: { value: '', description: '네이버 블로그 ID (예: trend_signal)' },
+    naverId: { value: '', description: '네이버 로그인용 ID (예: seoingyo)' },
+    blogAlias: { value: '', description: '네이버 블로그 별칭 (인사말 지칭 이름, 예: 마크 소장)' },
+    tistoryAlias: { value: '', description: '티스토리 블로그 별칭 (인사말 지칭 이름, 예: 라이언)' },
+    visibility: { value: '2', description: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)' }
   };
 }
 
@@ -288,12 +291,21 @@ async function runWorkflow(workflow, initialInput) {
     .filter(Boolean);
 
   const settings = loadSettings();
+  const flatSettings = {};
+  for (const [k, v] of Object.entries(settings)) {
+    if (v && typeof v === 'object' && v.value !== undefined) {
+      flatSettings[k] = v.value;
+    } else {
+      flatSettings[k] = v;
+    }
+  }
+
   // 파이프라인 컨텍스트 (변수 치환용)
   const context = {
     workflow_input: initialInput,
     prev_output:   initialInput,
     today:         new Date().toISOString().slice(0, 10),
-    ...settings
+    ...flatSettings
   };
 
   sendSSE({

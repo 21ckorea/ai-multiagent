@@ -1031,6 +1031,17 @@ async function loadSettingsForm() {
     msgEl.className = 'status-message';
   }
 
+  const VAR_DESCRIPTIONS = {
+    blogUrl: '티스토리 블로그 주소 (예: https://today-ittrend.tistory.com)',
+    kakaoId: '티스토리 로그인용 카카오 이메일 계정',
+    kakaoPassword: '티스토리 로그인용 카카오 계정 비밀번호',
+    blogId: '네이버 블로그 ID (예: trend_signal)',
+    naverId: '네이버 로그인용 ID (예: seoingyo)',
+    blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
+    tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
+    visibility: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)'
+  };
+
   try {
     const res = await fetch('/api/settings');
     const data = await res.json();
@@ -1038,15 +1049,27 @@ async function loadSettingsForm() {
       const entries = Object.entries(data.settings);
       if (entries.length === 0) {
         // 기본 템플릿 로드
-        addSettingRow('blogUrl', '', false);
-        addSettingRow('kakaoId', '', false);
-        addSettingRow('kakaoPassword', '', true);
-        addSettingRow('blogId', '', false);
-        addSettingRow('naverId', '', false);
+        addSettingRow('blogUrl', '', false, VAR_DESCRIPTIONS.blogUrl);
+        addSettingRow('kakaoId', '', false, VAR_DESCRIPTIONS.kakaoId);
+        addSettingRow('kakaoPassword', '', true, VAR_DESCRIPTIONS.kakaoPassword);
+        addSettingRow('blogId', '', false, VAR_DESCRIPTIONS.blogId);
+        addSettingRow('naverId', '', false, VAR_DESCRIPTIONS.naverId);
+        addSettingRow('blogAlias', '', false, VAR_DESCRIPTIONS.blogAlias);
+        addSettingRow('tistoryAlias', '', false, VAR_DESCRIPTIONS.tistoryAlias);
+        addSettingRow('visibility', '2', false, VAR_DESCRIPTIONS.visibility);
       } else {
         for (const [k, v] of entries) {
+          let val = '';
+          let desc = '';
+          if (v && typeof v === 'object' && v.value !== undefined) {
+            val = v.value;
+            desc = v.description || '';
+          } else {
+            val = v;
+            desc = VAR_DESCRIPTIONS[k] || '';
+          }
           const isPass = k.toLowerCase().includes('password') || k.toLowerCase().includes('pw') || k.toLowerCase().includes('secret');
-          addSettingRow(k, v, isPass);
+          addSettingRow(k, val, isPass, desc);
         }
       }
     }
@@ -1055,7 +1078,18 @@ async function loadSettingsForm() {
   }
 }
 
-function addSettingRow(key = '', value = '', isPassword = false) {
+const VAR_DESCRIPTIONS = {
+  blogUrl: '티스토리 블로그 주소 (예: https://today-ittrend.tistory.com)',
+  kakaoId: '티스토리 로그인용 카카오 이메일 계정',
+  kakaoPassword: '티스토리 로그인용 카카오 계정 비밀번호',
+  blogId: '네이버 블로그 ID (예: trend_signal)',
+  naverId: '네이버 로그인용 ID (예: seoingyo)',
+  blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
+  tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
+  visibility: '발행 공개 설정 (0: 비공개(초안), 1: 이웃공개, 2: 전체공개, 3: 서로이웃)'
+};
+
+function addSettingRow(key = '', value = '', isPassword = false, description = '') {
   const container = document.getElementById('settings-vars-list');
   if (!container) return;
 
@@ -1082,6 +1116,24 @@ function addSettingRow(key = '', value = '', isPassword = false) {
   valInput.value = value;
   valCol.appendChild(valInput);
 
+  // Description column
+  const descCol = document.createElement('div');
+  descCol.className = 'var-col desc-col';
+  const descInput = document.createElement('input');
+  descInput.type = 'text';
+  descInput.className = 'var-input desc-input';
+  descInput.placeholder = '설명 (비고)';
+  descInput.value = description || VAR_DESCRIPTIONS[key] || '';
+  descCol.appendChild(descInput);
+
+  // Auto-populate description when typing predefined key
+  keyInput.addEventListener('input', () => {
+    const k = keyInput.value.trim();
+    if (VAR_DESCRIPTIONS[k] && !descInput.value.trim()) {
+      descInput.value = VAR_DESCRIPTIONS[k];
+    }
+  });
+
   // Password checkbox column
   const pwCol = document.createElement('div');
   pwCol.className = 'var-col action-col';
@@ -1104,6 +1156,7 @@ function addSettingRow(key = '', value = '', isPassword = false) {
 
   row.appendChild(keyCol);
   row.appendChild(valCol);
+  row.appendChild(descCol);
   row.appendChild(pwCol);
   row.appendChild(delCol);
 
@@ -1123,8 +1176,9 @@ async function saveSettingsForm() {
   rows.forEach((row) => {
     const key = row.querySelector('.key-input').value.trim();
     const value = row.querySelector('.val-input').value.trim();
+    const description = row.querySelector('.desc-input').value.trim();
     if (key) {
-      settings[key] = value;
+      settings[key] = { value, description };
     }
   });
 

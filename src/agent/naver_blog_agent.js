@@ -141,7 +141,7 @@ async function execute(prompt, options) {
         naverId: params.naverId || '',
         contentFile: tempFile,
         images: imageArray,
-        visibility: '0', // 0: 비공개(초안) 우선
+        visibility: String(params.visibility !== undefined ? params.visibility : '0'),
         noPublish: false,
         headless: options.headless !== false,
         logger: customLogger
