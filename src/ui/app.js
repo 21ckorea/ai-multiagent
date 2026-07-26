@@ -1040,7 +1040,7 @@ async function loadSettingsForm() {
     blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
     tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
     naverVisibility: '네이버 발행 공개 설정 (0: 비공개, 1: 이웃공개, 2: 전체공개, 3: 서로이웃)',
-    tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 2: 전체공개)'
+    tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 1: 공개(보호), 2: 전체공개)'
   };
 
   try {
@@ -1089,7 +1089,7 @@ const VAR_DESCRIPTIONS = {
   blogAlias: '네이버 블로그 별칭 (글쓴이 지칭 이름, 예: 마크 소장)',
   tistoryAlias: '티스토리 블로그 별칭 (글쓴이 지칭 이름, 예: 라이언)',
   naverVisibility: '네이버 발행 공개 설정 (0: 비공개, 1: 이웃공개, 2: 전체공개, 3: 서로이웃)',
-  tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 2: 전체공개)'
+  tistoryVisibility: '티스토리 발행 공개 설정 (0: 비공개(초안), 1: 공개(보호), 2: 전체공개)'
 };
 
 function addSettingRow(key = '', value = '', isPassword = false, description = '') {
