@@ -12,7 +12,7 @@ const naverPublishHelper = require('../lib/playwright_naver_publish');
  */
 async function execute(prompt, options) {
   options?.log?.('Naver 자동 포스팅 에이전트 실행...');
-  
+
   let params = {};
   try {
     // rawPrompt(변환 전 원본 프롬프트)가 있으면 안전하게 파싱 후 변수 매핑
@@ -24,7 +24,7 @@ async function execute(prompt, options) {
       jsonText = jsonText.replace(/(?<!:)\/\/.*$/gm, '');
       jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, '');
       params = JSON.parse(jsonText);
-      
+
       // params의 각 값에 대해 {{...}} 패턴이 있으면 context에서 찾아서 치환 (안전한 매핑)
       if (options?.context) {
         for (const [key, val] of Object.entries(params)) {
@@ -66,9 +66,13 @@ async function execute(prompt, options) {
 
   const fs = require('fs');
   const path = require('path');
-  const tempDir = path.resolve(process.cwd(), 'temp');
+  // WRITABLE_ROOT: 패키지 앱은 APP_DATA_DIR, 개발 환경은 프로젝트 루트
+  const WRITABLE_ROOT = process.env.APP_DATA_DIR
+    ? path.resolve(process.env.APP_DATA_DIR)
+    : path.resolve(__dirname, '../..');
+  const tempDir = path.resolve(WRITABLE_ROOT, 'temp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-  
+
   const tempFile = path.resolve(tempDir, `naver_post_${Date.now()}.json`);
   const postData = {
     title: title,
@@ -76,7 +80,7 @@ async function execute(prompt, options) {
     blocks: [],
     tags: tags
   };
-  
+
   // 만약 content 자체가 JSON 문자열이면 내부의 필드들을 추출
   try {
     let cleanContent = content.trim();
@@ -94,38 +98,62 @@ async function execute(prompt, options) {
       if (parsedObj.body) postData.body = parsedObj.body;
       if (parsedObj.tags) postData.tags = parsedObj.tags;
     }
-  } catch(e) {}
-  
+  } catch (e) { }
+
   // 최종 타이틀 클리닝 (앞부분의 숫자. 공백 패턴 제거, 단 3.5처럼 소수점은 제외)
   title = title.replace(/^\[?\d{1,2}\]?(?![\.\,]\d)[\s\.\,\-\_]+\s*/, '').trim();
   postData.title = title;
-  
+
   fs.writeFileSync(tempFile, JSON.stringify(postData, null, 2), 'utf8');
 
   try {
     // 1. 네이버 로그인 및 에디터 진입 (playwright 기반)
     options?.log?.('네이버 스마트에디터 접속 중...');
-    
-    // 블로그 ID 추출 (없으면 기본값 경고)
-    const blogId = params.blogId || 'YOUR_BLOG_ID';
-    if (blogId === 'YOUR_BLOG_ID') {
-      return `[ERROR] 프롬프트에 "blogId": "본인네이버아이디" 를 추가해 주세요.`;
+
+    // 블로그 ID 추출: 프롬프트 > context의 구글시트 fetch 결과 순으로 탐색
+    let blogId = params.blogId || '';
+    let naverId = params.naverId || '';
+    let blogAlias = params.blogAlias || '';
+
+    // context에서 구글 시트 fetch 결과를 찾아서 계정 정보 보완
+    if (options?.context && (!blogId || !naverId)) {
+      for (const val of Object.values(options.context)) {
+        if (typeof val === 'string') {
+          try {
+            const parsed = JSON.parse(val);
+            if (parsed && parsed.rowNumber) { // google_sheet_agent의 fetch 결과
+              if (!blogId && parsed.blogId) blogId = parsed.blogId;
+              if (!naverId && parsed.naverId) naverId = parsed.naverId;
+              if (!blogAlias && parsed.blogAlias) blogAlias = parsed.blogAlias;
+              break;
+            }
+          } catch (e) { }
+        }
+      }
+    }
+
+    if (!blogId) {
+      return `[ERROR] 프롬프트 또는 구글 시트에 "blogId" 값을 추가해 주세요.`;
+    }
+
+    if (blogAlias) {
+      options?.log?.(`📝 계정: ${blogAlias} (${naverId} / ${blogId})`);
     }
 
     if (typeof naverPublishHelper.run === 'function') {
       let imageArray = [];
       if (images) {
         if (typeof images === 'string') {
-           try {
-             const parsedImgs = JSON.parse(images);
-             if (parsedImgs.images && Array.isArray(parsedImgs.images)) {
-               imageArray = parsedImgs.images;
-             }
-           } catch(e) {}
+          try {
+            const parsedImgs = JSON.parse(images);
+            if (parsedImgs.images && Array.isArray(parsedImgs.images)) {
+              imageArray = parsedImgs.images;
+            }
+          } catch (e) { }
         } else if (Array.isArray(images)) {
-           imageArray = images;
+          imageArray = images;
         } else if (images.images && Array.isArray(images.images)) {
-           imageArray = images.images;
+          imageArray = images.images;
         }
       }
 
@@ -138,15 +166,15 @@ async function execute(prompt, options) {
 
       const exitCode = await naverPublishHelper.run({
         blogId: blogId,
-        naverId: params.naverId || '',
+        naverId: naverId,
         contentFile: tempFile,
         images: imageArray,
-        visibility: String(params.visibility !== undefined ? params.visibility : '0'),
+        visibility: String(params.visibility !== undefined ? params.visibility : '2'),
         noPublish: false,
         headless: options.headless !== false,
         logger: customLogger
       });
-      
+
       if (exitCode === 0) {
         return JSON.stringify({
           success: true,

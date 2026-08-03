@@ -9,7 +9,12 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const DATA_DIR = path.resolve(process.cwd(), 'data', 'workflows');
+// WRITABLE_ROOT: 패키지 앱은 APP_DATA_DIR(userData), 개발 환경은 프로젝트 루트
+const WRITABLE_ROOT = process.env.APP_DATA_DIR
+  ? path.resolve(process.env.APP_DATA_DIR)
+  : path.resolve(__dirname, '../..');
+
+const DATA_DIR = path.join(WRITABLE_ROOT, 'data', 'workflows');
 const WORKFLOWS_FILE = path.join(DATA_DIR, 'workflows.json');
 const STEPS_FILE = path.join(DATA_DIR, 'steps.json');
 

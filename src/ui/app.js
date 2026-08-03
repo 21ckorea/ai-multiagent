@@ -204,6 +204,100 @@ function setSessionMessage(text, type = 'info') {
   el.className = `status-message ${type}`;
 }
 
+// ─── 네이버 계정 로그인 ──────────────────────────────────────
+
+async function loadNaverAccounts() {
+  const listEl = document.getElementById('naver-accounts-list');
+  if (!listEl) return;
+  try {
+    const res = await fetch('/api/naver-login/accounts');
+    const data = await res.json();
+    if (data.ok && data.accounts.length > 0) {
+      listEl.innerHTML = data.accounts.map(a =>
+        `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface-2,#1e293b);border-radius:6px;padding:4px 10px;margin:3px;">
+           <span>✅</span><strong>${a.naverId}</strong>
+         </span>`
+      ).join('');
+    } else {
+      listEl.textContent = '저장된 계정이 없습니다. 아래에서 로그인해 주세요.';
+    }
+  } catch {
+    listEl.textContent = '계정 목록을 불러오지 못했습니다.';
+  }
+}
+
+async function naverLoginStart() {
+  const naverId = document.getElementById('naver-login-id').value.trim();
+  if (!naverId) {
+    setNaverLoginMessage('네이버 아이디를 입력해 주세요.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-naver-login-start');
+  btn.disabled = true;
+  setNaverLoginMessage('브라우저를 여는 중...', 'loading');
+
+  try {
+    const res = await fetch('/api/naver-login/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ naverId }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      setNaverLoginMessage(
+        `🌐 브라우저가 열렸습니다!\n① 네이버에 "${naverId}" 계정으로 로그인\n② "로그인 상태 유지" 반드시 체크!\n③ 로그인 완료 후 아래 "로그인 완료 저장" 버튼 클릭`,
+        'info'
+      );
+      document.getElementById('btn-naver-login-confirm').style.display = 'flex';
+    } else {
+      setNaverLoginMessage(`오류: ${data.error}`, 'error');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    setNaverLoginMessage(`오류: ${err.message}`, 'error');
+    btn.disabled = false;
+  }
+}
+
+async function naverLoginConfirm() {
+  const naverId = document.getElementById('naver-login-id').value.trim();
+  const btn = document.getElementById('btn-naver-login-confirm');
+  btn.disabled = true;
+  setNaverLoginMessage('로그인 확인 중...', 'loading');
+
+  try {
+    const res = await fetch('/api/naver-login/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ naverId }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      setNaverLoginMessage(data.message, 'success');
+      document.getElementById('btn-naver-login-start').disabled = false;
+      document.getElementById('btn-naver-login-confirm').style.display = 'none';
+      document.getElementById('naver-login-id').value = '';
+      await loadNaverAccounts(); // 목록 갱신
+    } else {
+      setNaverLoginMessage(data.message || data.error, 'error');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    setNaverLoginMessage(`오류: ${err.message}`, 'error');
+    btn.disabled = false;
+  }
+}
+
+function setNaverLoginMessage(text, type = 'info') {
+  const el = document.getElementById('naver-login-message');
+  el.textContent = text;
+  el.className = `status-message ${type}`;
+  el.style.whiteSpace = 'pre-line';
+}
+
 // ─── 스텝 관리 ──────────────────────────────────────────────
 
 async function loadSteps() {
@@ -1225,7 +1319,8 @@ window.saveSettingsForm = saveSettingsForm;
 async function init() {
   connectSSE();
   await loadSessionStatus();
-  
+  await loadNaverAccounts();
+
   try {
     const res = await fetch('/api/app-info');
     if (res.ok) {

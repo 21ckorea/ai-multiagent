@@ -89,7 +89,10 @@ async function execute(prompt, options) {
 
   const fs = require('fs');
   const path = require('path');
-  const tempDir = path.resolve(process.cwd(), 'temp');
+  const WRITABLE_ROOT = process.env.APP_DATA_DIR
+    ? path.resolve(process.env.APP_DATA_DIR)
+    : path.resolve(__dirname, '../..');
+  const tempDir = path.resolve(WRITABLE_ROOT, 'temp');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
   
   const tempFile = path.resolve(tempDir, `tistory_post_${Date.now()}.json`);

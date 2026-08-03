@@ -236,7 +236,11 @@ async function run(options = {}) {
   let context;
   try {
     const naverIdSuffix = args.naverId ? '-' + args.naverId : '';
-    const userDataDir = path.resolve(process.cwd(), 'profiles/playwright-naver-profile' + naverIdSuffix);
+    // WRITABLE_ROOT: 패키지 앱은 APP_DATA_DIR(userData), 개발 환경은 프로젝트 루트
+    const _writableBase = process.env.APP_DATA_DIR
+      ? path.resolve(process.env.APP_DATA_DIR)
+      : path.resolve(__dirname, '../..');
+    const userDataDir = path.resolve(_writableBase, 'profiles/playwright-naver-profile' + naverIdSuffix);
     fs.mkdirSync(userDataDir, { recursive: true });
 
     const publishArgs = [...CHROME_STEALTH_ARGS];

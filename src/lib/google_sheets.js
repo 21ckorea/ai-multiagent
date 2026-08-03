@@ -66,12 +66,17 @@ async function fetchNextPendingRow(spreadsheetId, sheetName) {
 
   // Row 1 is header
   const headers = rows[0];
-  const statusColIndex = findColIndex(headers, ['포스트 완료여부', '완료여부']);
-  const titleColIndex = findColIndex(headers, ['추천 블로그 포스팅 제목', '포스팅 제목', '제목']);
+  const statusColIndex  = findColIndex(headers, ['포스트 완료여부', '완료여부']);
+  const titleColIndex   = findColIndex(headers, ['추천 블로그 포스팅 제목', '포스팅 제목', '제목']);
   const accountColIndex = findColIndex(headers, ['계정', '계정명']);
+  const blogIdColIndex  = findColIndex(headers, ['blogId', '블로그아이디', '블로그 아이디']);
+  const naverIdColIndex = findColIndex(headers, ['naverId', '네이버아이디', '네이버 아이디']);
+  const blogAliasColIndex = findColIndex(headers, ['blogAlias', '블로그별칭', '블로그 별칭', '별칭']);
 
   if (statusColIndex === -1) throw new Error('Sheet is missing "포스트 완료여부" column.');
   if (titleColIndex === -1) throw new Error('Sheet is missing "추천 블로그 포스팅 제목" column.');
+
+  const getCol = (row, idx) => idx !== -1 ? (row[idx] || '').trim() : '';
 
   // Find first row (index > 0) where status is empty
   for (let i = 1; i < rows.length; i++) {
@@ -81,9 +86,12 @@ async function fetchNextPendingRow(spreadsheetId, sheetName) {
       const title = row[titleColIndex] || '';
       if (title.trim() !== '') {
         return {
-          rowNumber: i + 1, // 1-based index for A1 notation
-          title: title.trim(),
-          account: accountColIndex !== -1 ? (row[accountColIndex] || '').trim() : '',
+          rowNumber:  i + 1, // 1-based index for A1 notation
+          title:      title.trim(),
+          account:    getCol(row, accountColIndex),
+          blogId:     getCol(row, blogIdColIndex),
+          naverId:    getCol(row, naverIdColIndex),
+          blogAlias:  getCol(row, blogAliasColIndex),
         };
       }
     }
@@ -233,18 +241,56 @@ async function markRowAsInProgress(spreadsheetId, sheetName, rowNumber) {
  * @param {Array<Array<any>>} values 
  * @returns {Promise<void>}
  */
-async function appendRows(spreadsheetId, sheetName, values) {
-  if (!sheetsApi) throw new Error('Google Sheets API is not initialized. Call initAuth() first.');
+async function appendRows(spreadsheetId, sheetName, values, credentialsPath) {
+  // 전역 sheetsApi 대신 로컬 인스턴스 생성 → 전역 상태 오염 방지
+  let localApi = sheetsApi; // 기본값: 기존 전역 인스턴스
+  if (credentialsPath) {
+    const localAuth = new google.auth.GoogleAuth({
+      keyFile: credentialsPath,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    localApi = google.sheets({ version: 'v4', auth: localAuth });
+  }
+  if (!localApi) throw new Error('Google Sheets API is not initialized. Call initAuth() first or pass credentialsPath.');
 
-  await sheetsApi.spreadsheets.values.append({
-    spreadsheetId,
-    range: sheetName,
-    valueInputOption: 'USER_ENTERED',
-    insertDataOption: 'INSERT_ROWS',
-    requestBody: {
-      values: values,
-    },
-  });
+  console.log('[appendRows] 호출됨:', { spreadsheetId, sheetName, rowCount: values.length, usingCredentials: !!credentialsPath });
+
+  // 1) 현재 시트의 마지막 행 번호 확인
+  let startRow = 2;
+  try {
+    const getResponse = await localApi.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}`,
+    });
+    const existingRows = getResponse.data.values || [];
+    startRow = existingRows.length + 1;
+    console.log('[appendRows] 현재 행 수:', existingRows.length, '→ 시작 행:', startRow);
+  } catch (getErr) {
+    console.error('[appendRows] values.get 실패:', getErr.message, getErr.code, getErr.status);
+    throw getErr;
+  }
+
+  // 2) batchUpdate 데이터 변환
+  const batchData = values.map((row, i) => ({
+    range: `${sheetName}!A${startRow + i}`,
+    values: [row],
+  }));
+  console.log('[appendRows] batchData 범위:', batchData.map(d => d.range));
+
+  // 3) batchUpdate 실행
+  try {
+    await localApi.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data: batchData,
+      },
+    });
+    console.log('[appendRows] batchUpdate 성공!');
+  } catch (batchErr) {
+    console.error('[appendRows] batchUpdate 실패:', batchErr.message, batchErr.code, batchErr.status);
+    throw batchErr;
+  }
 }
 
 /**

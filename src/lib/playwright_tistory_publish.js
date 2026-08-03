@@ -116,7 +116,11 @@ async function run(options = {}) {
   logger.info(`Tistory 자동 포스팅 진입 주소: ${newPostUrl}`);
 
   const profileSuffix = args.kakaoId ? '-' + args.kakaoId.replace(/[^a-zA-Z0-9]/g, '') : '';
-  const profileDir = path.resolve(process.cwd(), 'profiles/playwright-tistory-profile' + profileSuffix);
+  // WRITABLE_ROOT: 패키지 앱은 APP_DATA_DIR(userData), 개발 환경은 프로젝트 루트
+  const _writableBase2 = process.env.APP_DATA_DIR
+    ? path.resolve(process.env.APP_DATA_DIR)
+    : path.resolve(__dirname, '../..');
+  const profileDir = path.resolve(_writableBase2, 'profiles/playwright-tistory-profile' + profileSuffix);
   fs.mkdirSync(profileDir, { recursive: true });
 
   const publishArgs = [...CHROME_STEALTH_ARGS];

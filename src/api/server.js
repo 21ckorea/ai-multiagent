@@ -5,6 +5,17 @@
  * @description Express API 서버 — 워크플로우/세션/실행 REST API + SSE
  */
 
+// === 프로젝트 루트 고정 (process.chdir 이전에 저장) ===
+// __dirname = src/api → ../../ = 프로젝트 루트
+// process.cwd()는 APP_DATA_DIR 환경변수에 의해 변경될 수 있으므로 사용 금지
+const SERVER_ROOT = require('path').resolve(__dirname, '../..');
+// WRITABLE_ROOT: 실제로 파일을 쓸 수 있는 경로
+// - 패키지 앱(Electron): APP_DATA_DIR (userData, 쓰기 가능)
+// - 개발 환경: SERVER_ROOT (프로젝트 루트)
+const WRITABLE_ROOT = process.env.APP_DATA_DIR
+  ? require('path').resolve(process.env.APP_DATA_DIR)
+  : SERVER_ROOT;
+
 // === ASAR 앱 배포 환경을 위한 CWD 패치 ===
 if (process.env.APP_DATA_DIR) {
   try {
@@ -20,13 +31,13 @@ const path           = require('path');
 const fs             = require('fs');
 const { execSync }   = require('child_process');
 const multer         = require('multer');
-const { v4: uuidv4 } = require('uuid');
+
 
 const sessionManager = require('../agent/session_manager');
 const geminiAgent    = require('../agent/gemini_agent');
 const store          = require('../storage/workflow_store');
 
-const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
+const SETTINGS_FILE = path.join(WRITABLE_ROOT, 'data', 'settings.json');
 
 function loadSettings() {
   try {
@@ -66,8 +77,36 @@ function saveSettings(settings) {
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ─── 구 경로 → 신 경로 프로파일 자동 마이그레이션 ──────────────
+// APP_DATA_DIR(구 경로)에 저장된 Playwright 프로파일을 SERVER_ROOT(신 경로)로 복사
+(function migrateProfiles() {
+  try {
+    const oldBase = process.env.APP_DATA_DIR;
+    if (!oldBase) return; // 패키지 앱이 아닌 경우 skip
+    const oldProfilesDir = path.join(oldBase, 'profiles');
+    const newProfilesDir = path.join(WRITABLE_ROOT, 'profiles');
+    if (!fs.existsSync(oldProfilesDir)) return;
+
+    const entries = fs.readdirSync(oldProfilesDir);
+    for (const entry of entries) {
+      const oldPath = path.join(oldProfilesDir, entry);
+      const newPath = path.join(newProfilesDir, entry);
+      if (!fs.existsSync(newPath)) {
+        fs.mkdirSync(newProfilesDir, { recursive: true });
+        // 재귀 복사 (node 내장 fs.cpSync, Node 16.7+)
+        if (fs.cpSync) {
+          fs.cpSync(oldPath, newPath, { recursive: true });
+        }
+        console.log(`[Server] 프로파일 마이그레이션: ${entry}`);
+      }
+    }
+  } catch (e) {
+    console.warn('[Server] 프로파일 마이그레이션 실패 (무시):', e.message);
+  }
+})();
+
 // ─── 멀터(Multer) 업로드 설정 ───────────────────────────────────
-const uploadDir = path.join(process.cwd(), 'credentials');
+const uploadDir = path.join(WRITABLE_ROOT, 'credentials');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -75,8 +114,10 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    // 임의의 파일명으로 인한 덮어쓰기나 보안 문제 방지를 위해 고유 이름 부여
-    cb(null, `cred_${uuidv4().slice(0, 8)}.json`);
+    // 원본 파일명을 유지하되 한글/특수문자를 안전하게 변환
+    // 예: 구글시트.json → 구글시트.json (그대로 사용, 경로 문제 없음)
+    const safeName = file.originalname.replace(/[/\\?%*:|"<>]/g, '_');
+    cb(null, safeName);
   }
 });
 const upload = multer({ storage });
@@ -143,6 +184,119 @@ app.post('/api/session/clear', async (req, res) => {
     const { clearProfile } = req.body || {};
     const result = await sessionManager.clearSession(!!clearProfile);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ─── 네이버 계정 로그인 API ──────────────────────────────────────
+
+// 네이버 로그인 진행 중인 프로세스 관리
+const naverLoginSessions = {};
+
+app.post('/api/naver-login/start', async (req, res) => {
+  const { naverId } = req.body || {};
+  if (!naverId || !naverId.trim()) {
+    return res.status(400).json({ ok: false, error: 'naverId를 입력해 주세요.' });
+  }
+  const id = naverId.trim();
+
+  try {
+    const { chromium } = require('playwright');
+    const {
+      CHROME_STEALTH_ARGS,
+      PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
+      applyPlaywrightStealthInitScript,
+    } = require('../lib/common');
+
+    const userDataDir = path.join(WRITABLE_ROOT, 'profiles', `playwright-naver-profile-${id}`);
+    fs.mkdirSync(userDataDir, { recursive: true });
+
+    // 이미 로그인 세션이 있으면 기존 것 정리
+    if (naverLoginSessions[id]) {
+      try { await naverLoginSessions[id].context.close(); } catch {}
+      delete naverLoginSessions[id];
+    }
+
+    const context = await chromium.launchPersistentContext(userDataDir, {
+      headless: false,
+      channel: 'chrome',
+      args: CHROME_STEALTH_ARGS,
+      ignoreDefaultArgs: PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS,
+    });
+    await applyPlaywrightStealthInitScript(context);
+    const page = context.pages()[0] || await context.newPage();
+
+    await page.goto('https://nid.naver.com/nidlogin.login', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
+
+    naverLoginSessions[id] = { context, page, loggedIn: false };
+
+    // 로그인 완료 감지 (비동기로 URL 체크)
+    (async () => {
+      try {
+        for (let i = 0; i < 120; i++) { // 최대 2분 대기
+          await new Promise(r => setTimeout(r, 1000));
+          try {
+            const url = page.url();
+            if (url.includes('naver.com') && !url.includes('nidlogin') && !url.includes('login')) {
+              naverLoginSessions[id].loggedIn = true;
+              break;
+            }
+          } catch {}
+        }
+      } catch {}
+    })();
+
+    res.json({ ok: true, message: `브라우저가 열렸습니다. 네이버 로그인 후 "로그인 상태 유지"를 체크해 주세요.` });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/naver-login/confirm', async (req, res) => {
+  const { naverId } = req.body || {};
+  const id = (naverId || '').trim();
+  const session = naverLoginSessions[id];
+
+  if (!session) {
+    return res.status(400).json({ ok: false, error: '진행 중인 로그인 세션이 없습니다. 먼저 로그인을 시작해 주세요.' });
+  }
+
+  try {
+    const url = session.page.url();
+    const isLoggedIn = url.includes('naver.com') && !url.includes('nidlogin') && !url.includes('/login');
+    
+    if (isLoggedIn || session.loggedIn) {
+      await session.context.close();
+      delete naverLoginSessions[id];
+      res.json({ ok: true, message: `✅ ${id} 계정 로그인이 저장되었습니다! 이제 자동 포스팅 시 이 계정이 사용됩니다.` });
+    } else {
+      res.json({ ok: false, message: '아직 로그인이 완료되지 않았습니다. 브라우저 창에서 로그인 후 다시 눌러주세요.' });
+    }
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.get('/api/naver-login/accounts', (req, res) => {
+  try {
+    const profilesDir = path.join(WRITABLE_ROOT, 'profiles');
+    if (!fs.existsSync(profilesDir)) return res.json({ ok: true, accounts: [] });
+
+    const dirs = fs.readdirSync(profilesDir).filter(d =>
+      d.startsWith('playwright-naver-profile-') &&
+      fs.statSync(path.join(profilesDir, d)).isDirectory()
+    );
+
+    const accounts = dirs.map(d => ({
+      naverId: d.replace('playwright-naver-profile-', ''),
+      profileDir: path.join('profiles', d),
+    }));
+
+    res.json({ ok: true, accounts });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -316,8 +470,8 @@ async function runWorkflow(workflow, initialInput) {
     totalSteps:   steps.length,
   });
 
-  // 무한 루프 방지를 위한 최대 실행 스텝 수
-  const MAX_WORKFLOW_STEPS = 30;
+  // 무한 루프 방지를 위한 최대 실행 스텝 수 (5스텝 * 100행 = 500)
+  const MAX_WORKFLOW_STEPS = 500;
   let executionCount = 0;
   let currentIndex = 0;
   const stepExecutionCounts = {};
@@ -436,7 +590,18 @@ async function runWorkflow(workflow, initialInput) {
               // 피드백 전송을 위해 컨텍스트 업데이트 후 탈출
               context[`${step.id}_output`] = output;
               context.prev_output          = output;
-              
+
+              // 구글 시트 fetch 결과에서 계정 정보 주입 (goto 경로에서도 동일하게 처리)
+              try {
+                const parsed = JSON.parse(output);
+                if (parsed && parsed.rowNumber) {
+                  if (parsed.blogId)    context.blogId    = parsed.blogId;
+                  if (parsed.naverId)   context.naverId   = parsed.naverId;
+                  if (parsed.blogAlias) context.blogAlias = parsed.blogAlias;
+                  if (parsed.title)     context.sheetTitle = parsed.title;
+                }
+              } catch { /* JSON이 아닌 경우 무시 */ }
+
               // step_done 전송 (이 스텝은 여기서 종료)
               sendSSE({
                 type:      'step_done',
@@ -476,12 +641,31 @@ async function runWorkflow(workflow, initialInput) {
     }
 
     if (gotoTriggered) {
+      // 💡 안전망: goto로 돌아온 스텝 1에서 "항목 없음" 에러가 발생하면 워크플로우 종료
+      // (루프 조건 매칭이 공백 등으로 실패한 경우 대비)
+      if (output && output.includes('[ERROR]') && output.includes('항목이 없습니다')) {
+        sendSSE({ type: 'step_log', stepId: step.id, message: '🏁 더 이상 처리할 항목이 없어 워크플로우를 종료합니다.' });
+        sendSSE({ type: 'workflow_done', message: '모든 항목 처리 완료.' });
+        return;
+      }
       continue; // 다음 스텝으로 진행하지 않고 바뀐 currentIndex 위치부터 새로 while 루프 시작
     }
 
     // ── 파이프 컨텍스트 업데이트 ──────────────────────────────────
     context[`${step.id}_output`] = output;
     context.prev_output          = output;
+
+    // 구글 시트 fetch 결과에서 계정 정보를 컨텍스트에 자동 주입
+    // → 이후 스텝의 {{blogAlias}}, {{blogId}}, {{naverId}} 로 바로 사용 가능
+    try {
+      const parsed = JSON.parse(output);
+      if (parsed && parsed.rowNumber) {
+        if (parsed.blogId)    context.blogId    = parsed.blogId;
+        if (parsed.naverId)   context.naverId   = parsed.naverId;
+        if (parsed.blogAlias) context.blogAlias = parsed.blogAlias;
+        if (parsed.title)     context.sheetTitle = parsed.title;
+      }
+    } catch { /* JSON이 아닌 경우 무시 */ }
 
     // ── 단계 완료: 응답 전문 포함해서 전송 ────────────────────────
     sendSSE({
@@ -523,8 +707,12 @@ function substituteVariables(prompt, context) {
 
 function evaluateLoopCondition(loop, output) {
   if (!loop || loop.condition === 'none') return true;
-  if (loop.condition === 'keyword')
-    return output.includes(loop.conditionValue || '');
+  if (loop.condition === 'keyword') {
+    const condVal = (loop.conditionValue || '').trim();
+    // JSON 키워드 비교: 콜론/콤마 주변 공백을 제거하여 매칭 ('"hasNext": false' ≡ '"hasNext":false')
+    const normalise = (s) => s.replace(/"\s*:\s*/g, '":').replace(/,\s*/g, ',');
+    return normalise(output).includes(normalise(condVal)) || output.includes(condVal);
+  }
   if (loop.condition === 'minLength')
     return output.length >= parseInt(loop.conditionValue || '0', 10);
   if (loop.condition === 'regex') {

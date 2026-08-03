@@ -167,8 +167,12 @@ async function run() {
     url: writeUrl,
   });
 
+  // WRITABLE_ROOT: 패키지 앱은 APP_DATA_DIR(userData), 개발 환경은 프로젝트 루트
+  const _writableBase = process.env.APP_DATA_DIR
+    ? path.resolve(process.env.APP_DATA_DIR)
+    : path.resolve(__dirname, '../..');
   const userDataDir = path.resolve(
-    process.cwd(),
+    _writableBase,
     args.profileDir || (args.naverId ? 'profiles/playwright-naver-profile-' + args.naverId : DEFAULT_NAVER_PROFILE_DIR),
   );
   let context;

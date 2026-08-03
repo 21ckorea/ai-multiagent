@@ -187,6 +187,49 @@
           </div>
         </div>
 
+        <!-- 네이버 계정 로그인 카드 -->
+        <div class="card" id="naver-login-card" style="margin-top: 20px;">
+          <div class="card-header">
+            <div class="card-title-row">
+              <span class="card-icon">🟢</span>
+              <h2 class="card-title">네이버 계정 로그인 (최초 1회)</h2>
+            </div>
+          </div>
+
+          <p class="card-desc">
+            네이버 블로그 자동 포스팅을 위해 계정별로 한 번만 로그인합니다.<br/>
+            로그인 후 세션이 저장되어 이후에는 비밀번호 없이 자동 포스팅됩니다.
+          </p>
+
+          <!-- 저장된 계정 목록 -->
+          <div class="info-box secondary" style="margin-bottom: 16px;">
+            <div class="info-box-title">저장된 네이버 계정</div>
+            <div id="naver-accounts-list" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+              불러오는 중...
+            </div>
+          </div>
+
+          <!-- 로그인 입력 -->
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label">네이버 아이디 (naverId)</label>
+            <input type="text" class="form-input" id="naver-login-id"
+              placeholder="예: seoingyo" style="max-width: 320px;" />
+          </div>
+
+          <div class="card-actions" style="gap: 10px;">
+            <button class="btn btn-primary" id="btn-naver-login-start" onclick="naverLoginStart()">
+              <span class="btn-icon">🚀</span>
+              로그인 시작 (브라우저 열기)
+            </button>
+            <button class="btn btn-success" id="btn-naver-login-confirm" onclick="naverLoginConfirm()" style="display:none;">
+              <span class="btn-icon">✔</span>
+              로그인 완료 저장
+            </button>
+          </div>
+
+          <div class="status-message" id="naver-login-message" style="margin-top: 12px;"></div>
+        </div>
+
       </div>
     </section>
 
