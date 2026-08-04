@@ -55,6 +55,11 @@ const PASSWORD_MASK = '******';
 const CHROME_STEALTH_ARGS = [
   '--disable-blink-features=AutomationControlled',
   '--start-maximized',
+  // 백그라운드 모드(창이 화면 밖, 최소화)에서도 JS 타이머·렌더러·DOM 업데이트를 정상 처리
+  // → Naver 에디터(React) CDP 타이핑이 DOM에 반영되도록 필수
+  '--disable-background-timer-throttling',
+  '--disable-renderer-backgrounding',
+  '--disable-backgrounding-occluded-windows',
 ];
 
 const PLAYWRIGHT_STEALTH_IGNORE_DEFAULT_ARGS = ['--enable-automation'];
