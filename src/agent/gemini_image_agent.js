@@ -129,12 +129,34 @@ async function execute(prompt, options) {
       // 새 채팅으로 시작하여 이전 이미지가 덮어씌워지는 현상 방지
       try {
         await page.goto('https://gemini.google.com/app', { waitUntil: 'domcontentloaded' });
-        await new Promise(res => setTimeout(res, 3000));
+        // 고정 3초 대신: editor 셀렉터가 실제로 나타날 때까지 대기 (최대 30초)
+        try {
+          await page.waitForSelector(
+            'div.ql-editor[role="textbox"], div.ql-editor[contenteditable="true"], rich-textarea, [contenteditable="true"][class*="input"]',
+            { timeout: 30000 }
+          );
+        } catch {
+          // selector 못 찾아도 5초 대기 후 계속 시도
+          await new Promise(res => setTimeout(res, 5000));
+        }
       } catch (e) {
         options?.log?.(`[WARN] 새 채팅 페이지 이동 중 오류: ${e.message}`);
       }
 
-      const imageResult = await geminiImageHelper.runGeminiImageGeneration(page, context, p.text, mockLogger);
+      // skipSpaWait:true — 이미 page.goto로 올바른 URL에 있으므로
+      // waitForGeminiSpaReady의 20초 폴링을 건너뜀
+      let imageResult = await geminiImageHelper.runGeminiImageGeneration(
+        page, context, p.text, mockLogger, { skipSpaWait: true }
+      );
+
+      // spa_not_ready인 경우 10초 추가 대기 후 1회 재시도
+      if (!imageResult.ok && imageResult.reason === 'spa_not_ready') {
+        options?.log?.(`[WARN] ${i+1}번째 SPA 미준비 — 10초 대기 후 재시도...`);
+        await new Promise(res => setTimeout(res, 10000));
+        imageResult = await geminiImageHelper.runGeminiImageGeneration(
+          page, context, p.text, mockLogger, { skipSpaWait: false }
+        );
+      }
       
       if (imageResult.ok && imageResult.dataUrl) {
         const outFilename = `gemini_img_${Date.now()}_${i}.png`;
@@ -150,8 +172,8 @@ async function execute(prompt, options) {
       } else {
         options?.log?.(`[ERROR] ${i+1}번째 이미지 생성 실패: ${imageResult.reason}`);
       }
-      // 짧은 대기 시간
-      await new Promise(res => setTimeout(res, 2000));
+      // 이미지 간 대기: 2초 → 5초 (브라우저 정리 시간 확보)
+      await new Promise(res => setTimeout(res, 5000));
     }
 
     if (results.length > 0) {
