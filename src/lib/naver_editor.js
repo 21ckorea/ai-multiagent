@@ -1501,8 +1501,7 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
   if (!tagList.length) {
     logger?.info?.('[NAVER][PUB] no tags to enter');
   } else {
-    const input = frame.locator('#tag-input');
-    const TAG_TIMEOUT = 5000; // 기본 30s → 5s로 단축 (실패 시 빠르게 다음 태그로)
+    const TAG_TIMEOUT = 8000;
     let consecutiveFails = 0;
 
     for (const tag of tagList) {
@@ -1511,14 +1510,23 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
         break;
       }
       try {
-        // 요소가 화면 밖에 있을 때를 대비해 스크롤 후 force 클릭
-        await input.scrollIntoViewIfNeeded({ timeout: TAG_TIMEOUT });
+        // 매 태그마다 frame을 새로 탐색 (fill 실패 후 frame이 detach될 수 있음)
+        const tagFrame = await findFrameWithSelector(page, '#tag-input') || frame;
+        const input = tagFrame.locator('#tag-input');
+
+        // 백그라운드 모드(창 1×1, 화면 밖)에서는 scrollIntoViewIfNeeded가 실패할 수 있음
+        // → try-catch로 감싸서 실패해도 계속 진행
+        try {
+          await input.scrollIntoViewIfNeeded({ timeout: 2000 });
+        } catch { /* 백그라운드 모드에서 무시 */ }
+
+        // force: true → 가시성·포커스 무관하게 강제 조작 (headless/background 모드 대응)
         await input.click({ force: true, timeout: TAG_TIMEOUT });
-        await input.fill('', { timeout: TAG_TIMEOUT });
-        await input.pressSequentially(tag, { delay: 25 });
+        await input.fill('', { force: true, timeout: TAG_TIMEOUT });
+        await input.pressSequentially(tag, { delay: 30 });
         await sleep(120);
         await input.press('Enter', { timeout: TAG_TIMEOUT });
-        await sleep(200);
+        await sleep(250);
         entered += 1;
         consecutiveFails = 0;
         logger?.info?.(`[NAVER][PUB] tag ${entered}/${tagList.length} "${tag}"`);
@@ -1535,20 +1543,23 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
   // 5) Final 발행 (publish confirm) when requested.
   let published = false;
   if (finalPublish) {
-    await sleep(400);
+    await sleep(500);
     logger?.info?.('[NAVER][PUB] clicking final 발행 (publish)...');
+    // NAVER_PUBLISH_SELECTORS.confirm과 동일한 셀렉터 + 텍스트 기반 폴백
     const finalSelectors = [
+      ...(NAVER_PUBLISH_SELECTORS.confirm || []),
       'button[data-click-area="tpb*i.publish"]',
       'button[data-testid="seOnePublishBtn"]',
       'button.confirm_btn__WEaBq',
+      'TEXT=발행',
     ];
-    for (let i = 0; i < 15 && !published; i += 1) {
+    for (let i = 0; i < 25 && !published; i += 1) {
       const r = await tryClickSelectorsInAllFrames(page, finalSelectors);
       if (r?.ok) {
         published = true;
         logger?.info?.(`[NAVER][PUB] final 발행 clicked (${r.sel})`);
       } else {
-        await sleep(350);
+        await sleep(400);
       }
     }
     if (!published) {
@@ -1556,7 +1567,9 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
     }
   }
 
-  return { ok: true, entered, total: tagList.length, published };
+  // finalPublish=true인데 발행 버튼을 못 찾으면 ok:false 반환 (거짓 성공 방지)
+  const ok = finalPublish ? published : true;
+  return { ok, entered, total: tagList.length, published };
 }
 
 
