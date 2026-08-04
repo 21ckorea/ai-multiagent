@@ -763,6 +763,29 @@ async function tryNaverFillWithCdp(page, editorFrame, titleText, bodyText, logge
     const prep = await editorFrame.evaluate(naverEditorCdpEnsureEditorReadyMain);
     if (!prep?.ok) return false;
 
+    // 에디터 SPA가 초기화된 직후 "작성 중인 글이 있습니다" 팝업이 뜰 수 있음
+    // → 취소 버튼 클릭하여 이전 임시저장 글 대신 새 글로 시작
+    try {
+      const popupDismissed = await page.evaluate(() => {
+        const popup =
+          document.querySelector('.se-popup-container.__se-pop-layer') ||
+          document.querySelector('.se-popup-container') ||
+          document.querySelector('.se-popup-container-wrap');
+        if (!popup) return false;
+        const bodyText = (popup.textContent || '').replace(/\s+/g, ' ').trim();
+        const isDraft = /작성\s*중인/.test(bodyText) || /이어서\s*작성/.test(bodyText);
+        if (!isDraft) return false;
+        const btns = Array.from(popup.querySelectorAll('button'));
+        const cancelBtn = btns.find(b => (b.textContent || '').trim().includes('취소'));
+        if (cancelBtn) { cancelBtn.click(); return true; }
+        return false;
+      });
+      if (popupDismissed) {
+        logger?.info?.('[NAVER][DEBUG] 임시저장 팝업 감지 → 취소 클릭 (새 글로 시작)');
+        await sleep(600);
+      }
+    } catch { /* ignore */ }
+
     if (title.length) {
       const fr = await editorFrame.evaluate(naverEditorFocusFieldMain, 'title');
       logger?.info?.(

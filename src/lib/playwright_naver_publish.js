@@ -97,56 +97,68 @@ Example:
 }
 
 async function tryDismissDraftPopup(page) {
-  try {
+  const POLL_INTERVAL_MS = 300;
+  const TIMEOUT_MS = 10000; // 에디터 SPA 초기화 후 팝업 출현까지 최대 10초 대기
+  const deadline = Date.now() + TIMEOUT_MS;
+
+  const checkAndDismiss = async (evalFn) => {
+    try {
+      return await evalFn(() => {
+        // 모든 알려진 팝업 컨테이너 셀렉터 시도
+        const popup =
+          document.querySelector('.se-popup-container.__se-pop-layer') ||
+          document.querySelector('.se-popup-container') ||
+          document.querySelector('.se-popup-container-wrap');
+        if (!popup) return false;
+
+        const titleEl = popup.querySelector('.se-popup-title') || popup.querySelector('.se-popup-message');
+        const titleText = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
+        const bodyText = (popup.textContent || '').replace(/\s+/g, ' ').trim();
+
+        const isDraftPopup =
+          /작성\s*중인\s*글이\s*있습니다/.test(titleText) ||
+          /작성\s*중인\s*글이\s*있습니다/.test(bodyText) ||
+          /이어서\s*작성/.test(bodyText) ||
+          /임시저장/.test(bodyText);
+
+        if (!isDraftPopup) return false;
+
+        // "취소" 텍스트를 가진 버튼 우선 클릭 (이어서 작성하지 않음)
+        const buttons = Array.from(popup.querySelectorAll('button, a, div[role="button"]'));
+        const cancelBtn = buttons.find(b => (b.textContent || '').trim().includes('취소'));
+        if (cancelBtn) { cancelBtn.click(); return true; }
+
+        const btn =
+          popup.querySelector('button.se-popup-button-cancel') ||
+          popup.querySelector('.se-popup-button-cancel') ||
+          popup.querySelector('button[class*="cancel"]');
+        if (!btn) return false;
+        btn.click();
+        return true;
+      });
+    } catch { return false; }
+  };
+
+  while (Date.now() < deadline) {
+    // 1) 메인 프레임 직접 검사
+    const mainClicked = await checkAndDismiss(fn => page.evaluate(fn));
+    if (mainClicked) { await sleep(500); return; }
+
+    // 2) 모든 iframe 검사
+    let frameClicked = false;
     for (const frame of page.frames()) {
       try {
-        const clicked = await frame.evaluate(() => {
-          const popup =
-            document.querySelector('.se-popup-container.__se-pop-layer') ||
-            document.querySelector('.se-popup-container') ||
-            document.querySelector('.se-popup-container-wrap');
-          if (!popup) return false;
-          
-          const titleEl = popup.querySelector('.se-popup-title') || popup.querySelector('.se-popup-message');
-          const titleText = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
-          const bodyText = (popup.textContent || '').replace(/\s+/g, ' ').trim();
-          
-          const isDraftPopup = 
-            /작성\s*중인\s*글이\s*있습니다/.test(titleText) || 
-            /작성\s*중인\s*글이\s*있습니다/.test(bodyText) ||
-            /이어서\s*작성/.test(bodyText) ||
-            /임시저장/.test(bodyText);
-            
-          if (!isDraftPopup) return false;
-          
-          // "취소" 텍스트를 가진 버튼 우선 클릭
-          const buttons = Array.from(popup.querySelectorAll('button, a, div[role="button"]'));
-          const cancelBtn = buttons.find(b => (b.textContent || '').trim().includes('취소'));
-          if (cancelBtn) {
-            cancelBtn.click();
-            return true;
-          }
-          
-          const btn =
-            popup.querySelector('button.se-popup-button-cancel') ||
-            popup.querySelector('.se-popup-button-cancel') ||
-            popup.querySelector('button[class*="cancel"]');
-          if (!btn) return false;
-          btn.click();
-          return true;
-        });
-        if (clicked) {
-          await sleep(500);
-          return;
-        }
-      } catch (e) {
-        /* ignore */
-      }
+        const clicked = await checkAndDismiss(fn => frame.evaluate(fn));
+        if (clicked) { frameClicked = true; break; }
+      } catch { /* ignore */ }
     }
-  } catch (err) {
-    /* ignore */
+    if (frameClicked) { await sleep(500); return; }
+
+    await sleep(POLL_INTERVAL_MS);
   }
+  // 10초 내 팝업 없으면 그냥 진행 (팝업이 없는 정상 케이스)
 }
+
 
 function resolveContentPath(args) {
   const candidate = args.xmlFile || args.htmlFile || args.contentFile;
