@@ -1496,12 +1496,14 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
   }
   logger?.info?.('[NAVER][PUB] tag input ready');
 
-  // 4) Type each tag then Enter (the input clears after each commit).
+  // 4) Type each tag then Enter
+  //    Playwright의 locator.fill/click은 React DOM 재렌더링 후 요소를 재탐색할 때 timeout이
+  //    발생하고, 백그라운드 모드(창 1×1, 화면 밖)에서도 actionability 검사에 막힌다.
+  //    → evaluate()로 포커스(actionability 무관) + page.keyboard로 실제 키 이벤트 전송
   let entered = 0;
   if (!tagList.length) {
     logger?.info?.('[NAVER][PUB] no tags to enter');
   } else {
-    const TAG_TIMEOUT = 8000;
     let consecutiveFails = 0;
 
     for (const tag of tagList) {
@@ -1510,23 +1512,32 @@ async function naverOpenPublishAndEnterTags(page, options, logger) {
         break;
       }
       try {
-        // 매 태그마다 frame을 새로 탐색 (fill 실패 후 frame이 detach될 수 있음)
+        // 매 태그마다 frame을 새로 탐색 (React 재렌더링으로 frame이 바뀔 수 있음)
         const tagFrame = await findFrameWithSelector(page, '#tag-input') || frame;
-        const input = tagFrame.locator('#tag-input');
 
-        // 백그라운드 모드(창 1×1, 화면 밖)에서는 scrollIntoViewIfNeeded가 실패할 수 있음
-        // → try-catch로 감싸서 실패해도 계속 진행
-        try {
-          await input.scrollIntoViewIfNeeded({ timeout: 2000 });
-        } catch { /* 백그라운드 모드에서 무시 */ }
+        // evaluate()로 직접 포커스 — actionability·timeout 없음
+        const focused = await tagFrame.evaluate(() => {
+          const el = document.querySelector('#tag-input');
+          if (!el) return false;
+          el.focus();
+          return true;
+        });
+        if (!focused) throw new Error('#tag-input not found in frame evaluate');
 
-        // force: true → 가시성·포커스 무관하게 강제 조작 (headless/background 모드 대응)
-        await input.click({ force: true, timeout: TAG_TIMEOUT });
-        await input.fill('', { force: true, timeout: TAG_TIMEOUT });
-        await input.pressSequentially(tag, { delay: 30 });
-        await sleep(120);
-        await input.press('Enter', { timeout: TAG_TIMEOUT });
-        await sleep(250);
+        await sleep(80);
+
+        // 기존 내용 지우기: Ctrl+A → Delete
+        await page.keyboard.press('Control+a');
+        await sleep(30);
+        await page.keyboard.press('Delete');
+        await sleep(50);
+
+        // 실제 키보드 이벤트로 태그 입력 (OS 수준 이벤트 → 배경 모드에서도 동작)
+        await page.keyboard.type(tag, { delay: 40 });
+        await sleep(100);
+        await page.keyboard.press('Enter');
+        await sleep(300);
+
         entered += 1;
         consecutiveFails = 0;
         logger?.info?.(`[NAVER][PUB] tag ${entered}/${tagList.length} "${tag}"`);
