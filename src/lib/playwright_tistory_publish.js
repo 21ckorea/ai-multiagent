@@ -211,7 +211,11 @@ async function run(options = {}) {
     await tryDismissDraftPopup(page, logger);
 
     // 에디터 HTML 주입
-    const finalHtml = `<h1>${title}</h1>\n${body}`;
+    // Tistory 새 에디터는 본문 내 <h1>을 지원하지 않으므로 (h2부터 시작)
+    // <h1>${title}</h1>을 본문에 넣으면 Tistory 파서가 이를 지워버리거나 
+    // 첫 번째 문단을 제목으로 덮어쓰는 부작용이 생길 수 있음.
+    // 본문은 body만 주입하고, 제목은 forcePostTitle로 명시적으로 전달.
+    const finalHtml = body;
     logger.info('티스토리 에디터에 본문 주입 시작...');
     const injectResult = await injectHtmlToNewPost(
       page,
@@ -222,6 +226,7 @@ async function run(options = {}) {
         deferAutoPublish: true,
         blogUrl: args.blogUrl,
         categoryItemElementId: args.category || '',
+        forcePostTitle: title,
       },
       logger
     );

@@ -1532,6 +1532,7 @@ function normalizePublishOpts(publishOpts = {}) {
     isPublic: publishOpts.isPublic === true,
     autoPublish: publishOpts.autoPublish === true,
     deferAutoPublish: publishOpts.deferAutoPublish === true,
+    forcePostTitle: typeof publishOpts.forcePostTitle === 'string' ? publishOpts.forcePostTitle : undefined,
   };
 }
 
@@ -2138,6 +2139,7 @@ async function injectHtmlToNewPost(page, html, publishOpts = {}, logger, options
     isPublic: resolved.isPublic,
     autoPublish: resolved.autoPublish,
     deferAutoPublish: resolved.deferAutoPublish,
+    forcePostTitle: resolved.forcePostTitle,
   };
   const payload = String(html ?? '');
   const debugEnabled = isTistoryInjectDebugEnabled();
