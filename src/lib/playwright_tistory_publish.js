@@ -249,7 +249,7 @@ async function run(options = {}) {
       logger.info('[TISTORY] 이미지 실시간 생성 플로우를 시작합니다 (네이버 매칭 방식)...');
       try {
         const placeholders = extractImagePlaceholders(finalHtml);
-        const resolvedTitle = extractFirstH1PlainTextFromHtml(finalHtml) || title || '블로그 대표 이미지';
+        const resolvedTitle = title || '블로그 대표 이미지';
 
         // 대표 이미지(썸네일)도 큐에 등록
         placeholders.push({
