@@ -226,6 +226,7 @@ async function run(options = {}) {
         blogUrl: args.blogUrl,
         categoryItemElementId: args.category || '',
         forcePostTitle: postData.title, // '새 블로그 포스트' 기본값을 주입하지 않음
+        forceTags: postData.tags, // JSON의 tags 배열을 전달
       },
       logger
     );
