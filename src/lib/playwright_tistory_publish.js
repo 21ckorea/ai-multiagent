@@ -225,7 +225,7 @@ async function run(options = {}) {
         deferAutoPublish: true,
         blogUrl: args.blogUrl,
         categoryItemElementId: args.category || '',
-        forcePostTitle: title,
+        forcePostTitle: postData.title, // '새 블로그 포스트' 기본값을 주입하지 않음
       },
       logger
     );

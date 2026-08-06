@@ -44,8 +44,23 @@ async function execute(prompt, options) {
     params = {};
   }
 
-  let title = params.title || '새 블로그 포스트';
   let content = params.content || ''; // HTML or markdown
+  let title = params.title || '';
+  if (!title && content) {
+    try {
+      const { extractFirstH1PlainTextFromHtml } = require('../lib/tistory_publish_harvest');
+      const extractedTitle = extractFirstH1PlainTextFromHtml(content);
+      if (extractedTitle) {
+        title = extractedTitle;
+        options?.log?.(`[INFO] 제목 누락되어 본문에서 추출함: ${title}`);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  if (!title) {
+    title = '새 블로그 포스트';
+  }
   const images = params.images || []; // Array of local paths
   const tags = params.tags || []; // Array of tags
 
