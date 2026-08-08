@@ -191,7 +191,7 @@ function tistoryEditorModeClickMain(arg) {
   }
 
   try {
-    window.alert = function alertStub() {};
+    window.alert = function alertStub() { };
     window.confirm = function confirmStub() {
       return true;
     };
@@ -210,13 +210,11 @@ function tistoryEditorModeClickMain(arg) {
     res = res.replace(/<p>[^<]*((권장|추천|해시|관련|참고)\s*태그|tags?)\s*[：:][\s\S]*?<\/p>/i, '');
     // Or if it's just a bunch of hashtags in the last paragraph
     res = res.replace(/<p>[\s]*((#[^\s#<]+[\s]*)+)<\/p>(?![\s\S]*<p>)/gi, '');
-    // Strip first H1-H3 as it's extracted for the title
-    res = res.replace(/<h[1-3]\b[^>]*>[\s\S]*?<\/h[1-3]>/i, '');
-    // Strip HR tags which render as a bothersome dotted line in Tistory
-    res = res.replace(/<hr\b[^>]*>/gi, '');
+    // Title ripping is prevented by the <p><br></p> prepended in playwright_tistory_publish.js,
+    // so we no longer need to strip the first H1-H3 here.
     return res;
   }
-  
+
   htmlToApply = stripTitleAndTags(htmlToApply);
   const pub = publishOpts;
   const wantPublic = pub.isPublic === true;
@@ -830,111 +828,111 @@ function tistoryEditorModeClickMain(arg) {
         return;
       }
 
-    const CM = window.CodeMirror;
-    const pos =
-      CM && typeof CM.Pos === 'function'
-        ? (line, ch) => CM.Pos(line, ch)
-        : (line, ch) => ({ line, ch });
-    const input = typeof cm.getInputField === 'function' ? cm.getInputField() : null;
+      const CM = window.CodeMirror;
+      const pos =
+        CM && typeof CM.Pos === 'function'
+          ? (line, ch) => CM.Pos(line, ch)
+          : (line, ch) => ({ line, ch });
+      const input = typeof cm.getInputField === 'function' ? cm.getInputField() : null;
 
-    function injectSpaceLikeUser() {
-      try {
-        cm.setValue('');
-      } catch {
-        /* ignore */
-      }
-      cm.focus();
-      if (input) {
+      function injectSpaceLikeUser() {
         try {
-          input.focus();
-          input.dispatchEvent(
-            new KeyboardEvent('keydown', {
-              key: ' ',
-              code: 'Space',
-              keyCode: 32,
-              which: 32,
-              bubbles: true,
-              cancelable: true,
-            }),
-          );
-          input.dispatchEvent(
-            new InputEvent('beforeinput', {
-              bubbles: true,
-              cancelable: true,
-              inputType: 'insertText',
-              data: ' ',
-              isComposing: false,
-            }),
-          );
+          cm.setValue('');
         } catch {
           /* ignore */
         }
-      }
-      try {
-        cm.replaceRange(' ', pos(0, 0), pos(0, 0));
-      } catch {
+        cm.focus();
+        if (input) {
+          try {
+            input.focus();
+            input.dispatchEvent(
+              new KeyboardEvent('keydown', {
+                key: ' ',
+                code: 'Space',
+                keyCode: 32,
+                which: 32,
+                bubbles: true,
+                cancelable: true,
+              }),
+            );
+            input.dispatchEvent(
+              new InputEvent('beforeinput', {
+                bubbles: true,
+                cancelable: true,
+                inputType: 'insertText',
+                data: ' ',
+                isComposing: false,
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        }
         try {
-          cm.setValue(' ');
+          cm.replaceRange(' ', pos(0, 0), pos(0, 0));
         } catch {
-          /* ignore */
+          try {
+            cm.setValue(' ');
+          } catch {
+            /* ignore */
+          }
+        }
+        if (input) {
+          try {
+            input.dispatchEvent(
+              new InputEvent('input', {
+                bubbles: true,
+                inputType: 'insertText',
+                data: ' ',
+                isComposing: false,
+              }),
+            );
+            input.dispatchEvent(
+              new KeyboardEvent('keyup', {
+                key: ' ',
+                code: 'Space',
+                keyCode: 32,
+                which: 32,
+                bubbles: true,
+                cancelable: true,
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
         }
       }
-      if (input) {
-        try {
-          input.dispatchEvent(
-            new InputEvent('input', {
-              bubbles: true,
-              inputType: 'insertText',
-              data: ' ',
-              isComposing: false,
-            }),
-          );
-          input.dispatchEvent(
-            new KeyboardEvent('keyup', {
-              key: ' ',
-              code: 'Space',
-              keyCode: 32,
-              which: 32,
-              bubbles: true,
-              cancelable: true,
-            }),
-          );
-        } catch {
-          /* ignore */
-        }
-      }
-    }
 
-    let bodyInserted = false;
-    function insertBodyOnce() {
-      if (bodyInserted) return;
-      cm.focus();
-      let ch = 1;
-      try {
-        const line0 = cm.getLine(0);
-        if (typeof line0 !== 'string' || line0.length < 1) ch = 0;
-        cm.replaceRange(html, pos(0, ch), pos(0, ch));
-        bodyInserted = true;
-      } catch {
+      let bodyInserted = false;
+      function insertBodyOnce() {
+        if (bodyInserted) return;
+        cm.focus();
+        let ch = 1;
         try {
-          cm.setValue(ch === 0 ? html : `\u0020${html}`);
+          const line0 = cm.getLine(0);
+          if (typeof line0 !== 'string' || line0.length < 1) ch = 0;
+          cm.replaceRange(html, pos(0, ch), pos(0, ch));
           bodyInserted = true;
         } catch {
+          try {
+            cm.setValue(ch === 0 ? html : `\u0020${html}`);
+            bodyInserted = true;
+          } catch {
+            /* ignore */
+          }
+        }
+        try {
+          cm.refresh();
+        } catch {
           /* ignore */
         }
       }
-      try {
-        cm.refresh();
-      } catch {
-        /* ignore */
-      }
-    }
 
-    injectSpaceLikeUser();
-    window.setTimeout(insertBodyOnce, T.bodyInsert1Ms);
-    window.setTimeout(insertBodyOnce, T.bodyInsert2Ms);
-    const bodyDoneMs = Math.max(T.bodyInsert1Ms, T.bodyInsert2Ms) + T.afterBodySettleMs;
-    window.setTimeout(() => resolve(), bodyDoneMs);
+      injectSpaceLikeUser();
+      window.setTimeout(insertBodyOnce, T.bodyInsert1Ms);
+      window.setTimeout(insertBodyOnce, T.bodyInsert2Ms);
+      const bodyDoneMs = Math.max(T.bodyInsert1Ms, T.bodyInsert2Ms) + T.afterBodySettleMs;
+      window.setTimeout(() => resolve(), bodyDoneMs);
     });
   }
 
@@ -1704,8 +1702,8 @@ async function openHtmlEditorModeViaPlaywright(page, logger, timing = TISTORY_IN
         if (String(label).trim() === 'HTML') {
           await mceHtml.nth(i).click({ timeout: 5000 });
           logInjectPhase(logger, 'playwright_mce_html_widget_click');
-          await htmlItem.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
-          await htmlItem.click({ timeout: 5000 }).catch(() => {});
+          await htmlItem.waitFor({ state: 'visible', timeout: 8000 }).catch(() => { });
+          await htmlItem.click({ timeout: 5000 }).catch(() => { });
           await sleep(afterHtmlModeMs);
           return { ok: true, via: 'playwright_mce_html' };
         }
@@ -2538,7 +2536,7 @@ function tistoryPasteImageAtPlaceholderMain(arg) {
   return new Promise((resolve) => {
     const L = (...a) => console.log('[ja_test][TistoryImagePaste]', ...a);
     try {
-      window.alert = function alertStub() {};
+      window.alert = function alertStub() { };
       window.confirm = function confirmStub() {
         return true;
       };
@@ -2616,8 +2614,8 @@ function tistoryPasteImageAtPlaceholderMain(arg) {
         const list = Array.isArray(raw)
           ? raw
           : Object.keys(raw)
-              .map((k) => raw[k])
-              .filter(Boolean);
+            .map((k) => raw[k])
+            .filter(Boolean);
         for (let i = 0; i < list.length; i += 1) {
           const ed = list[i];
           if (ed && typeof ed.getBody === 'function' && ed.getBody() === bodyEl) {
@@ -2773,7 +2771,7 @@ function tistoryPasteImageAtPlaceholderMain(arg) {
                 const nodeNorm = normalizeForPlaceholderMatch(node.nodeValue);
                 if (nodeNorm.includes('이미지') && nodeNorm.includes('삽입')) {
                   node.parentNode.insertBefore(imgP, node);
-                  
+
                   // Safely remove the placeholder text from the text node
                   let newValue = node.nodeValue.replace(needle, '');
                   if (newValue === node.nodeValue) {
@@ -2781,14 +2779,14 @@ function tistoryPasteImageAtPlaceholderMain(arg) {
                       // Try flexible whitespace match of the exact needle
                       const needleRe = new RegExp(needle.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&').replace(/\\s\+/g, '\\s+'), 'i');
                       newValue = node.nodeValue.replace(needleRe, '');
-                    } catch (e) {}
+                    } catch (e) { }
                   }
-                  
+
                   if (newValue === node.nodeValue) {
                     // Wording might be slightly different. Remove the entire placeholder starting from '이미지 삽입공간' to bracket or end of node.
                     newValue = node.nodeValue.replace(/\[?\s*이미지\s*삽입\s*공간[\s\S]*?(\]|$)/i, '');
                   }
-                  
+
                   node.nodeValue = newValue;
                   replaced = true;
                   removedPlaceholder = true;
