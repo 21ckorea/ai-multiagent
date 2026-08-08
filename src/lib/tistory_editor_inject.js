@@ -212,6 +212,8 @@ function tistoryEditorModeClickMain(arg) {
     res = res.replace(/<p>[\s]*((#[^\s#<]+[\s]*)+)<\/p>(?![\s\S]*<p>)/gi, '');
     // Strip first H1-H3 as it's extracted for the title
     res = res.replace(/<h[1-3]\b[^>]*>[\s\S]*?<\/h[1-3]>/i, '');
+    // Strip HR tags which render as a bothersome dotted line in Tistory
+    res = res.replace(/<hr\b[^>]*>/gi, '');
     return res;
   }
   
