@@ -348,6 +348,7 @@ async function run(options = {}) {
         blogUrl: args.blogUrl,
         categoryItemElementId: args.category || '',
         coverDataUrl,
+        forcePostTitle: postData.title,
       },
       logger
     );
