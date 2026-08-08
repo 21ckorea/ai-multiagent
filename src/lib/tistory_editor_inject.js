@@ -744,37 +744,10 @@ function tistoryEditorModeClickMain(arg) {
 
   function dispatchEnterOnTagInput(inp) {
     try {
-      inp.dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: 'Enter',
-          code: 'Enter',
-          keyCode: 13,
-          which: 13,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-      inp.dispatchEvent(
-        new KeyboardEvent('keypress', {
-          key: 'Enter',
-          code: 'Enter',
-          keyCode: 13,
-          charCode: 13,
-          which: 13,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-      inp.dispatchEvent(
-        new KeyboardEvent('keyup', {
-          key: 'Enter',
-          code: 'Enter',
-          keyCode: 13,
-          which: 13,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
+      const opts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+      inp.dispatchEvent(new KeyboardEvent('keydown', opts));
+      inp.dispatchEvent(new KeyboardEvent('keypress', opts));
+      inp.dispatchEvent(new KeyboardEvent('keyup', opts));
     } catch {
       /* ignore */
     }
