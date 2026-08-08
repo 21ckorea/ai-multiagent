@@ -210,6 +210,10 @@ function tistoryEditorModeClickMain(arg) {
     res = res.replace(/<p>[^<]*((권장|추천|해시|관련|참고)\s*태그|tags?)\s*[：:][\s\S]*?<\/p>/i, '');
     // Or if it's just a bunch of hashtags in the last paragraph
     res = res.replace(/<p>[\s]*((#[^\s#<]+[\s]*)+)<\/p>(?![\s\S]*<p>)/gi, '');
+    
+    // Convert <hr> tags into div borders to prevent Tistory from changing them into dotted lines (...)
+    res = res.replace(/<hr\b[^>]*>/gi, '<div style="border-top: 1px solid #e5e7eb; margin: 40px 0;"></div>');
+    
     // Title ripping is prevented by the <p><br></p> prepended in playwright_tistory_publish.js,
     // so we no longer need to strip the first H1-H3 here.
     return res;
